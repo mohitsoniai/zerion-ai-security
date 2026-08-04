@@ -1,0 +1,226 @@
+document.addEventListener("DOMContentLoaded", () => {
+    loadDashboardData();
+    init3DTilt();
+
+    // --- SMART URL EXTRACTOR ---
+    function extractHostname(input) {
+        let cleanInput = input.trim().toLowerCase();
+        if (!cleanInput) return "";
+        try {
+            if (cleanInput.startsWith("http://") || cleanInput.startsWith("https://")) {
+                return new URL(cleanInput).hostname;
+            }
+            return new URL("https://" + cleanInput).hostname;
+        } catch (e) {
+            return cleanInput; 
+        }
+    }
+
+    // --- MANUAL INPUT LISTENERS ---
+    document.getElementById("add-whitelist").addEventListener("click", () => {
+        const domain = extractHostname(document.getElementById("whitelist-input").value);
+        if (domain) modifyList('whitelist', 'add', domain);
+        document.getElementById("whitelist-input").value = '';
+    });
+
+    document.getElementById("add-blacklist").addEventListener("click", () => {
+        const domain = extractHostname(document.getElementById("blacklist-input").value);
+        if (domain) modifyList('blacklist', 'add', domain);
+        document.getElementById("blacklist-input").value = '';
+    });
+
+    // --- TRANCO SEARCH ENGINE ---
+    document.getElementById("btn-search-tranco").addEventListener("click", () => {
+        const query = extractHostname(document.getElementById("tranco-input").value);
+        const resultBox = document.getElementById("tranco-result");
+        
+        if (!query) return;
+
+        chrome.storage.local.get({ globalTrusted: [] }, (data) => {
+            const isTrusted = data.globalTrusted.some(d => query === d || query.endsWith("." + d));
+            if (isTrusted) {
+                resultBox.innerHTML = `✅ <span style="color:#00ff66; text-shadow: 0 0 10px #00ff66;">${query}</span> is in the Tranco Database!`;
+            } else {
+                resultBox.innerHTML = `⚠️ <span style="color:#ffa500; text-shadow: 0 0 10px #ffa500;">${query}</span> requires AI Scan.`;
+            }
+        });
+    });
+
+    // --- EVENT DELEGATION FOR BUTTONS ---
+    document.addEventListener("click", (e) => {
+        if (e.target.classList.contains("dynamic-btn")) {
+            const list = e.target.getAttribute("data-list");
+            const action = e.target.getAttribute("data-action");
+            const domain = e.target.getAttribute("data-domain");
+            modifyList(list, action, domain);
+        }
+    });
+});
+
+// --- THE 3D HOLOGRAPHIC TILT ENGINE ---
+function init3DTilt() {
+    const cards = document.querySelectorAll('.interactive-3d');
+    
+    cards.forEach(card => {
+        card.addEventListener('mousemove', (e) => {
+            const rect = card.getBoundingClientRect();
+            const x = e.clientX - rect.left; // x position within the element.
+            const y = e.clientY - rect.top;  // y position within the element.
+            
+            const centerX = rect.width / 2;
+            const centerY = rect.height / 2;
+            
+            // Calculate rotation (max 6 degrees for subtlety)
+            const rotateX = ((y - centerY) / centerY) * -6; 
+            const rotateY = ((x - centerX) / centerX) * 6;
+            
+            card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02, 1.02, 1.02)`;
+        });
+        
+        card.addEventListener('mouseleave', () => {
+            // Snap back to flat when mouse leaves
+            card.style.transform = `perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)`;
+        });
+    });
+}
+
+function loadDashboardData() {
+    chrome.storage.local.get({ scanHistory: [], userTrust: {}, userBlacklist: [] }, (data) => {
+        const history = data.scanHistory.reverse();
+        const trustData = data.userTrust;
+        const blacklistData = data.userBlacklist;
+        
+        // 1. Calculate Stats
+        const trustedDomains = Object.keys(trustData).filter(d => trustData[d] >= 2);
+        document.getElementById("stat-total-scans").innerText = history.length;
+        document.getElementById("stat-blocked").innerText = blacklistData.length;
+        document.getElementById("stat-trusted").innerText = trustedDomains.length;
+
+        // 2. Render Analytics Chart
+        renderChart(history);
+
+        // 3. Populate History
+        const historyTable = document.getElementById("history-table-body");
+        historyTable.innerHTML = "";
+        if (history.length === 0) {
+            historyTable.innerHTML = `<tr><td colspan="5" class="empty-state">No scans logged.</td></tr>`;
+        } else {
+            history.forEach(scan => {
+                let hostname = "unknown";
+                try { hostname = new URL(scan.url).hostname; } catch(e) {}
+
+                const tr = document.createElement("tr");
+                let badgeClass = scan.score > 75 ? "danger" : (scan.score > 30 ? "warning" : "safe");
+                let badgeText = scan.score > 75 ? "BLOCKED" : (scan.score > 30 ? "WARNING" : "SAFE");
+                const displayUrl = scan.url.length > 35 ? scan.url.substring(0, 35) + "..." : scan.url;
+
+                tr.innerHTML = `
+                    <td style="color: var(--text-muted);">${scan.date}</td>
+                    <td title="${scan.url}">${displayUrl}</td>
+                    <td style="color: var(--primary-cyan); font-weight:bold; text-shadow: 0 0 5px var(--primary-glow);">${scan.score}</td>
+                    <td><span class="badge ${badgeClass}">${badgeText}</span></td>
+                    <td>
+                        <button class="btn-action btn-white dynamic-btn" data-list="whitelist" data-action="add" data-domain="${hostname}">Trust</button>
+                        <button class="btn-action btn-black dynamic-btn" data-list="blacklist" data-action="add" data-domain="${hostname}">Block</button>
+                    </td>
+                `;
+                historyTable.appendChild(tr);
+            });
+        }
+
+        // 4. Populate Whitelist
+        const whitelistTable = document.getElementById("whitelist-table-body");
+        whitelistTable.innerHTML = "";
+        if (trustedDomains.length === 0) whitelistTable.innerHTML = `<tr><td class="empty-state">No trusted domains.</td></tr>`;
+        else {
+            trustedDomains.forEach(domain => {
+                const tr = document.createElement("tr");
+                tr.innerHTML = `
+                    <td style="color: var(--safe-green); font-weight: bold; text-shadow: 0 0 5px rgba(0,255,102,0.4);">${domain}</td>
+                    <td style="text-align:right;">
+                        <button class="btn-action btn-remove dynamic-btn" data-list="whitelist" data-action="remove" data-domain="${domain}">Remove</button>
+                    </td>
+                `;
+                whitelistTable.appendChild(tr);
+            });
+        }
+
+        // 5. Populate Blacklist
+        const blacklistTable = document.getElementById("blacklist-table-body");
+        blacklistTable.innerHTML = "";
+        if (blacklistData.length === 0) blacklistTable.innerHTML = `<tr><td class="empty-state">No custom blocks.</td></tr>`;
+        else {
+            blacklistData.forEach(domain => {
+                const tr = document.createElement("tr");
+                tr.innerHTML = `
+                    <td style="color: var(--danger-red); font-weight: bold; text-shadow: 0 0 5px var(--danger-glow);">${domain}</td>
+                    <td style="text-align:right;">
+                        <button class="btn-action btn-remove dynamic-btn" data-list="blacklist" data-action="remove" data-domain="${domain}">Remove</button>
+                    </td>
+                `;
+                blacklistTable.appendChild(tr);
+            });
+        }
+    });
+}
+
+// --- PURE CSS DONUT CHART LOGIC ---
+function renderChart(history) {
+    if (history.length === 0) return;
+
+    let safeCount = 0, warnCount = 0, dangerCount = 0;
+    history.forEach(scan => {
+        if (scan.score > 75) dangerCount++;
+        else if (scan.score > 30) warnCount++;
+        else safeCount++;
+    });
+
+    const total = history.length;
+    document.getElementById("count-safe").innerText = safeCount;
+    document.getElementById("count-warn").innerText = warnCount;
+    document.getElementById("count-danger").innerText = dangerCount;
+
+    const safePct = (safeCount / total) * 100;
+    const warnPct = (warnCount / total) * 100;
+
+    const safeEnd = safePct;
+    const warnEnd = safePct + warnPct;
+
+    const chart = document.getElementById("traffic-chart");
+    chart.style.background = `conic-gradient(
+        var(--safe-green) 0% ${safeEnd}%, 
+        var(--warn-orange) ${safeEnd}% ${warnEnd}%, 
+        var(--danger-red) ${warnEnd}% 100%
+    )`;
+}
+
+// --- STORAGE MODIFICATION LOGIC ---
+function modifyList(listType, action, domain) {
+    if (!domain || domain === 'unknown') return;
+
+    chrome.storage.local.get({ userTrust: {}, userBlacklist: [] }, (data) => {
+        let trustData = data.userTrust;
+        let blacklistData = data.userBlacklist;
+
+        if (listType === 'whitelist') {
+            if (action === 'add') {
+                trustData[domain] = 3; 
+                blacklistData = blacklistData.filter(d => d !== domain); 
+            } else if (action === 'remove') {
+                delete trustData[domain];
+            }
+        } 
+        else if (listType === 'blacklist') {
+            if (action === 'add') {
+                if (!blacklistData.includes(domain)) blacklistData.push(domain);
+                delete trustData[domain]; 
+            } else if (action === 'remove') {
+                blacklistData = blacklistData.filter(d => d !== domain);
+            }
+        }
+
+        chrome.storage.local.set({ userTrust: trustData, userBlacklist: blacklistData }, () => {
+            loadDashboardData();
+        });
+    });
+}
