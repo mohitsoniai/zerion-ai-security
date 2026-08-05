@@ -1,0 +1,453 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="popup.css" />
+    <style>
+      body {
+        width: 350px;
+        background: #050505;
+        color: white;
+        font-family: 'Courier New', monospace;
+        margin: 0;
+        overflow-x: hidden;
+      }
+
+      .tabs {
+        display: flex;
+        border-bottom: 1px solid #333;
+        background: #111;
+      }
+      .tab {
+        flex: 1;
+        padding: 10px;
+        text-align: center;
+        cursor: pointer;
+        color: #888;
+        transition: 0.3s;
+        font-weight: bold;
+      }
+      .tab.active {
+        color: #00f3ff;
+        border-bottom: 2px solid #00f3ff;
+        background: #0a0a0a;
+      }
+
+      .view {
+        display: none;
+        padding: 15px;
+      }
+      .view.active {
+        display: block;
+      }
+
+      /* SCANNER STYLES */
+      .ring-container {
+        position: relative;
+        width: 120px;
+        height: 120px;
+        margin: 0 auto 20px;
+      }
+      .ring-circle {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        border: 5px solid #333;
+        box-sizing: border-box;
+        transition: border-color 0.5s;
+      }
+      .score-text {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 32px;
+        font-weight: bold;
+        color: white;
+      }
+
+      .data-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 10px;
+        text-align: left;
+        font-size: 12px;
+      }
+      .data-row {
+        background: #111;
+        padding: 10px;
+        border-radius: 4px;
+        border-left: 3px solid #333;
+      }
+      .label {
+        color: #888;
+        font-size: 10px;
+        text-transform: uppercase;
+        display: block;
+        margin-bottom: 4px;
+      }
+      .value {
+        color: #fff;
+        font-weight: bold;
+      }
+
+      .harm-box {
+        border: 1px solid #ff003c;
+        background: rgba(255, 0, 60, 0.1);
+        padding: 10px;
+        margin-top: 10px;
+        border-radius: 4px;
+        display: none;
+      }
+
+      /* HISTORY STYLES */
+      .history-item {
+        border-bottom: 1px solid #222;
+        padding: 10px 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .h-url {
+        font-size: 11px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 220px;
+        color: #ccc;
+      }
+      .h-score {
+        font-weight: bold;
+        font-size: 12px;
+      }
+      .safe {
+        color: #00f3ff;
+      }
+      .sus {
+        color: #ffa500;
+      }
+      .danger {
+        color: #ff003c;
+      }
+
+      /* BUTTONS */
+      button {
+        background: #00f3ff;
+        color: #000;
+        border: none;
+        padding: 10px;
+        width: 100%;
+        font-weight: bold;
+        cursor: pointer;
+        margin-top: 15px;
+        border-radius: 4px;
+      }
+      button:hover {
+        background: #fff;
+      }
+
+      /* DASHBOARD BUTTON STYLE */
+      .btn-dash {
+        background: transparent;
+        color: #00f3ff;
+        border: 1px solid #00f3ff;
+        margin-top: 10px;
+      }
+      .btn-dash:hover {
+        background: rgba(0, 243, 255, 0.1);
+        color: #fff;
+      }
+
+      /* DANGER / RESET BUTTON STYLE */
+      .btn-danger {
+        background: #222;
+        color: #ff003c;
+        border: 1px solid #ff003c;
+        margin-top: 20px;
+      }
+      .btn-danger:hover {
+        background: #ff003c;
+        color: white;
+      }
+
+      /* TOGGLE SWITCH STYLES */
+      .switch {
+        position: relative;
+        display: inline-block;
+        width: 38px;
+        height: 20px;
+      }
+      .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+      .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #333;
+        transition: 0.4s;
+        border-radius: 20px;
+      }
+      .slider:before {
+        position: absolute;
+        content: '';
+        height: 14px;
+        width: 14px;
+        left: 3px;
+        bottom: 3px;
+        background-color: white;
+        transition: 0.4s;
+        border-radius: 50%;
+      }
+      input:checked + .slider {
+        background-color: #00f3ff;
+      }
+      input:checked + .slider:before {
+        transform: translateX(18px);
+      }
+
+      /* LIGHT MODE OVERRIDES */
+      body.light-mode {
+        background: #f5f5fa;
+        color: #111;
+      }
+      body.light-mode .tabs {
+        background: #e5e5ea;
+        border-bottom: 1px solid #ccc;
+      }
+      body.light-mode .tab {
+        color: #666;
+      }
+      body.light-mode .tab.active {
+        color: #0088cc;
+        border-bottom: 2px solid #0088cc;
+        background: #f5f5fa;
+      }
+      body.light-mode .score-text {
+        color: #111;
+      }
+      body.light-mode .data-row {
+        background: #fff;
+        border-left: 3px solid #ccc;
+      }
+      body.light-mode .label {
+        color: #666;
+      }
+      body.light-mode .value {
+        color: #111;
+      }
+      body.light-mode #view-controls div {
+        background: #fff !important;
+        border-color: #ddd !important;
+      }
+      body.light-mode #view-controls span, body.light-mode #view-controls h4 {
+        color: #111 !important;
+      }
+      body.light-mode #report-domain-input, body.light-mode #report-type, body.light-mode #report-comment {
+        background: #fff !important;
+        border-color: #ccc !important;
+        color: #111 !important;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="tabs">
+      <div class="tab active" id="tab-scan">SCANNER</div>
+      <div class="tab" id="tab-history">HISTORY</div>
+      <div class="tab" id="tab-controls">CONTROLS</div>
+    </div>
+
+    <div id="view-scan" class="view active">
+      <div class="ring-container">
+        <div class="ring-circle" id="score-ring"></div>
+        <div class="score-text" id="score-num">--</div>
+        <div
+          style="
+            position: absolute;
+            bottom: -20px;
+            width: 100%;
+            text-align: center;
+            font-size: 10px;
+            color: #888;
+          "
+        >
+          RISK SCORE
+        </div>
+      </div>
+
+      <div id="harm-display" class="harm-box">
+        <div style="color: #ff9999; margin-bottom: 5px">
+          ⚠️ <strong>THREAT:</strong> <span id="harm-cause"></span>
+        </div>
+        <div style="color: #fff">💥 <strong>EFFECT:</strong> <span id="harm-effect"></span></div>
+      </div>
+
+      <div class="data-grid" style="margin-top: 15px">
+        <div class="data-row">
+          <span class="label">Target Domain</span>
+          <span class="value" id="domain-name" style="color: #00f3ff">Scanning...</span>
+        </div>
+        <div class="data-row">
+          <span class="label">Domain Age</span>
+          <span class="value" id="domain-age">--</span>
+        </div>
+        <div class="data-row">
+          <span class="label">VirusTotal Intelligence</span>
+          <span class="value" id="vt-data">--</span>
+        </div>
+      </div>
+
+      <button id="scan-btn">🔄 RE-SCAN TAB</button>
+      <button
+        id="trust-domain-btn"
+        class="btn-dash"
+        style="border-color: #00ff66; color: #00ff66; margin-top: 10px"
+      >
+        ✅ TRUST THIS SITE
+      </button>
+      <button id="open-dashboard" class="btn-dash">📊 OPEN COMMAND CENTER</button>
+    </div>
+
+    <div id="view-history" class="view">
+      <div style="text-align: right; margin-bottom: 10px">
+        <span style="font-size: 10px; color: #555; cursor: pointer" id="clear-history"
+          >CLEAR LOGS</span
+        >
+      </div>
+
+      <div id="history-list">
+        <div style="text-align: center; color: #555; margin-top: 20px">No recent scans.</div>
+      </div>
+
+      <button id="btn-reset" class="btn-danger">⚠️ RESET TRUSTED SITES</button>
+      <div style="font-size: 10px; color: #555; text-align: center; margin-top: 5px">
+        (Forget "Proceed Anyway" choices)
+      </div>
+    </div>
+
+    <div id="view-controls" class="view">
+      <div
+        style="
+          background: #111;
+          padding: 15px;
+          border-radius: 8px;
+          border: 1px solid #222;
+          margin-bottom: 15px;
+        "
+      >
+        <div
+          style="
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+          "
+        >
+          <span style="font-size: 13px; font-weight: bold; color: #fff">Auto Scan Interceptor</span>
+          <label class="switch">
+            <input type="checkbox" id="toggle-autoscan" checked />
+            <span class="slider"></span>
+          </label>
+        </div>
+        <p style="font-size: 10px; color: #666; margin: 0">
+          Automatically scan all incoming navigation requests in real-time.
+        </p>
+        <div
+          style="
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #222;
+          "
+        >
+          <span style="font-size: 13px; font-weight: bold; color: #fff" id="darkmode-label">Dark Mode Theme</span>
+          <label class="switch">
+            <input type="checkbox" id="toggle-darkmode" checked />
+            <span class="slider"></span>
+          </label>
+        </div>
+      </div>
+
+      <div style="background: #111; padding: 15px; border-radius: 8px; border: 1px solid #222">
+        <h4
+          style="
+            margin-top: 0;
+            margin-bottom: 8px;
+            font-size: 12px;
+            color: #00f3ff;
+            text-transform: uppercase;
+          "
+        >
+          Quick Threat Report
+        </h4>
+        <p style="font-size: 9px; color: #666; margin-top: 0; margin-bottom: 12px">
+          Submit false positive domains or phishing links directly to WADE analysts.
+        </p>
+        <div style="display: flex; flex-direction: column; gap: 8px">
+          <input
+            type="text"
+            id="report-domain-input"
+            placeholder="Domain (e.g. phish-site.com)"
+            style="
+              padding: 8px;
+              background: #050505;
+              border: 1px solid #333;
+              color: white;
+              border-radius: 4px;
+              font-family: inherit;
+              font-size: 11px;
+            "
+            readonly
+          />
+          <select
+            id="report-type"
+            style="
+              padding: 8px;
+              background: #050505;
+              border: 1px solid #333;
+              color: white;
+              border-radius: 4px;
+              font-family: inherit;
+              font-size: 11px;
+              cursor: pointer;
+            "
+          >
+            <option value="false_positive">Report False Positive (Safe)</option>
+            <option value="phishing">Report Unblocked Threat (Malicious)</option>
+          </select>
+          <textarea
+            id="report-comment"
+            placeholder="Optional comments..."
+            style="
+              padding: 8px;
+              background: #050505;
+              border: 1px solid #333;
+              color: white;
+              border-radius: 4px;
+              font-family: inherit;
+              font-size: 11px;
+              height: 50px;
+              resize: none;
+            "
+          ></textarea>
+          <button id="btn-submit-report" style="margin-top: 5px; padding: 8px">
+            Submit Report
+          </button>
+        </div>
+        <div
+          id="report-status"
+          style="font-size: 10px; text-align: center; margin-top: 8px; font-weight: bold"
+        ></div>
+      </div>
+    </div>
+
+    <script src="popup.js"></script>
+  </body>
+</html>
