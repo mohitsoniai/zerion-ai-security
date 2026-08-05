@@ -179,7 +179,9 @@ function performScan(tabId, url) {
         let hostname = 'unknown';
         try {
           hostname = new URL(url).hostname;
-        } catch (e) {}
+        } catch (e) {
+          console.debug(e);
+        }
 
         const isIgnored = storage.ignoredDomains.some(
           (d) => hostname === d || hostname.endsWith('.' + d)

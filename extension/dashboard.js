@@ -1,6 +1,5 @@
-// dashboard.js - Handles WADE Command Center Dashboard UI
+// dashboard.js - Handles WADE Extension Dashboard Interactions
 const API_URL = 'http://localhost:7860';
-const WADE_API_KEY = 'wade_secret_key_v2';
 let fullScanHistory = [];
 let activeTimeline = 'weekly';
 
@@ -47,11 +46,11 @@ document.addEventListener('DOMContentLoaded', () => {
     
     [btnDaily, btnWeekly, btnMonthly].forEach(btn => {
       if (btn.classList.contains('active')) {
-        btn.style.backgroundColor = 'var(--primary-cyan)';
+        btn.style.backgroundColor = 'var(--cyan)';
         btn.style.color = '#000';
       } else {
         btn.style.backgroundColor = 'transparent';
-        btn.style.color = '#888';
+        btn.style.color = 'var(--text-muted)';
       }
     });
   }
@@ -74,7 +73,7 @@ document.addEventListener('DOMContentLoaded', () => {
       ]);
       const csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      triggerDownload(blob, `wade_threat_logs_${new Date().toISOString().split('T')[0]}.csv`);
+      triggerDownload(blob, `wade_threat_logs.csv`);
     });
   }
 
@@ -85,7 +84,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (fullScanHistory.length === 0) return alert('No history logs to export.');
       const jsonContent = JSON.stringify(fullScanHistory, null, 2);
       const blob = new Blob([jsonContent], { type: 'application/json;charset=utf-8;' });
-      triggerDownload(blob, `wade_threat_logs_${new Date().toISOString().split('T')[0]}.json`);
+      triggerDownload(blob, `wade_threat_logs.json`);
     });
   }
 
@@ -176,7 +175,9 @@ function renderScansTable(scans) {
       let hostname = 'unknown';
       try {
         hostname = new URL(scan.url).hostname;
-      } catch (e) {}
+      } catch (e) {
+        console.debug(e);
+      }
 
       const tr = document.createElement('tr');
       let badgeClass = scan.score > 75 ? 'danger' : scan.score > 30 ? 'warning' : 'safe';
@@ -185,12 +186,12 @@ function renderScansTable(scans) {
 
       tr.innerHTML = `
         <td style="color: var(--text-muted);">${scan.date}</td>
-        <td title="${scan.url}">${displayUrl}</td>
-        <td style="color: var(--primary-cyan); font-weight:bold; text-shadow: 0 0 5px var(--primary-glow);">${scan.score}</td>
+        <td title="${scan.url}" style="font-weight:bold;">${displayUrl}</td>
+        <td style="color: var(--cyan); font-weight:bold; text-shadow: 0 0 5px var(--cyan-glow);">${scan.score}</td>
         <td><span class="badge ${badgeClass}">${badgeText}</span></td>
         <td>
-          <button class="btn-action btn-white dynamic-btn" data-list="whitelist" data-action="add" data-domain="${hostname}">Trust</button>
-          <button class="btn-action btn-black dynamic-btn" data-list="blacklist" data-action="add" data-domain="${hostname}">Block</button>
+          <button class="btn-action btn-remove dynamic-btn" data-list="whitelist" data-action="add" data-domain="${hostname}">Trust</button>
+          <button class="btn-action btn-remove dynamic-btn" style="border-color:var(--danger-red); color:var(--danger-red);" data-list="blacklist" data-action="add" data-domain="${hostname}">Block</button>
         </td>
       `;
       historyTable.appendChild(tr);
@@ -247,11 +248,11 @@ function init3DTilt() {
 }
 
 function loadDashboardData() {
-  // First, check if the WADE Backend API is reachable to pull global statistics and history
+  // Check if API is running
   fetch(`${API_URL}/dashboard/stats`)
     .then(res => res.json())
     .then(stats => {
-      // Backend is online, load scans from backend
+      // Backend active
       fetch(`${API_URL}/dashboard/recent`)
         .then(res => res.json())
         .then(recentScans => {
@@ -260,7 +261,7 @@ function loadDashboardData() {
               scans: recentScans.map(s => ({
                 url: s.url,
                 score: s.risk_score,
-                date: s.timestamp,
+                date: new Date(s.timestamp).toLocaleDateString(),
                 category: s.risk_category,
                 severity: s.severity,
                 reason: s.detection_reason
@@ -274,7 +275,7 @@ function loadDashboardData() {
         });
     })
     .catch(() => {
-      // Backend is offline, fall back to local chrome.storage
+      // Offline fallback
       loadDashboardFromLocalStorage();
     });
 }
@@ -282,8 +283,6 @@ function loadDashboardData() {
 function loadDashboardFromLocalStorage() {
   chrome.storage.local.get({ scanHistory: [], userTrust: {}, userBlacklist: [], ignoredDomains: [] }, (data) => {
     const history = data.scanHistory.reverse();
-    
-    // Build simple stats object matching backend format
     const total = history.length;
     const safe = history.filter(s => s.score <= 30).length;
     const suspicious = history.filter(s => s.score > 30 && s.score <= 75).length;
@@ -301,7 +300,7 @@ function loadDashboardFromLocalStorage() {
       if (sev in severities) severities[sev]++;
     });
 
-    // Simple weekly timeline loader
+    // Create daily, weekly, monthly timeline data
     const timeline_weekly = [];
     const dates = {};
     for (let i = 6; i >= 0; i--) {
@@ -328,7 +327,7 @@ function loadDashboardFromLocalStorage() {
         success_rate: total > 0 ? ((safe / total) * 100).toFixed(1) : '100.0',
         categories: categories,
         severities: severities,
-        timeline_daily: timeline_weekly, // Mock Daily/Monthly fallbacks using Weekly
+        timeline_daily: timeline_weekly,
         timeline_weekly: timeline_weekly,
         timeline_monthly: timeline_weekly
       },
@@ -346,7 +345,7 @@ function renderDashboardWithData(data) {
   const blacklistData = data.userBlacklist;
   const ignoredData = data.ignoredDomains;
 
-  // 1. Set stats values
+  // 1. Set values
   const trustedDomains = Object.keys(trustData).filter((d) => trustData[d] >= 2);
   document.getElementById('stat-total-scans').innerText = stats.total_scans;
   document.getElementById('stat-blocked').innerText = blacklistData.length;
@@ -356,7 +355,7 @@ function renderDashboardWithData(data) {
   // 2. Render Donut Chart
   renderConicDonut(stats);
 
-  // 3. Render Timeline Chart
+  // 3. Render Timeline Chart (CSS-based bar layout for MV3 offline compliance)
   const timelineContainer = document.getElementById('timeline-container');
   if (timelineContainer) {
     timelineContainer.innerHTML = '';
@@ -365,8 +364,18 @@ function renderDashboardWithData(data) {
     else if (activeTimeline === 'monthly') timelineData = stats.timeline_monthly || [];
 
     const maxCount = Math.max(...timelineData.map(d => d.count), 1);
+    
+    // Create inner wrapper with flex styling
+    const wrapper = document.createElement('div');
+    wrapper.style.display = 'flex';
+    wrapper.style.justifyContent = 'space-around';
+    wrapper.style.alignItems = 'flex-end';
+    wrapper.style.height = '180px';
+    wrapper.style.paddingTop = '20px';
+    wrapper.style.width = '100%';
+
     timelineData.forEach((item) => {
-      const heightPct = Math.max(10, (item.count / maxCount) * 60);
+      const heightPct = Math.max(10, (item.count / maxCount) * 140);
       let label = item.label;
       if (activeTimeline === 'weekly' || activeTimeline === 'monthly') {
         const parts = label.split('/');
@@ -377,14 +386,19 @@ function renderDashboardWithData(data) {
         }
       }
       const barWrapper = document.createElement('div');
-      barWrapper.className = 'timeline-bar-wrapper';
+      barWrapper.style.display = 'flex';
+      barWrapper.style.flexDirection = 'column';
+      barWrapper.style.alignItems = 'center';
+      barWrapper.style.gap = '8px';
+      barWrapper.style.flex = '1';
       barWrapper.innerHTML = `
-        <span class="bar-count" style="font-size: 8px;">${item.count}</span>
-        <div class="timeline-bar" style="height: ${heightPct}px; width: 12px; background: var(--primary-cyan); box-shadow: 0 0 5px var(--primary-glow); border-radius: 2px 2px 0 0;"></div>
-        <span class="timeline-label" style="font-size: 7px; white-space: nowrap; transform: rotate(-25deg);">${label}</span>
+        <span class="bar-count" style="font-size: 9px; font-weight: bold; color: var(--cyan);">${item.count}</span>
+        <div class="timeline-bar" style="height: ${heightPct}px; width: 14px; background: linear-gradient(180deg, var(--cyan) 0%, rgba(0, 243, 255, 0.2) 100%); box-shadow: 0 0 10px rgba(0, 243, 255, 0.2); border-radius: 4px 4px 0 0; transition: height 0.5s ease;"></div>
+        <span class="timeline-label" style="font-size: 8px; color: var(--text-muted);">${label}</span>
       `;
-      timelineContainer.appendChild(barWrapper);
+      wrapper.appendChild(barWrapper);
     });
+    timelineContainer.appendChild(wrapper);
   }
 
   // 4. Render Threat Categories
@@ -399,15 +413,13 @@ function renderDashboardWithData(data) {
       const color = catColors[cat] || 'var(--text-main)';
       const row = document.createElement('div');
       row.className = 'stat-row';
-      row.style.flexDirection = 'column';
-      row.style.alignItems = 'stretch';
       row.innerHTML = `
-        <div style="display:flex; justify-content:space-between; font-size:9px; margin-bottom:2px;">
+        <div style="display:flex; justify-content:space-between; font-size:11px; margin-bottom:4px;">
           <span>${cat}</span>
           <span style="color:${color}; font-weight:bold;">${count} (${pct}%)</span>
         </div>
-        <div class="stat-progress-bg" style="background:#111; border-radius:3px; height:5px; width:100%; overflow:hidden; border: 1px solid #222;">
-          <div class="stat-progress-fill" style="width: ${pct}%; background-color: ${color}; height100%; transition:width 0.3s;"></div>
+        <div class="stat-progress-bg" style="background:#111; border-radius:3px; height:6px; width:100%; overflow:hidden; border: 1px solid rgba(255,255,255,0.05);">
+          <div class="stat-progress-fill" style="width: ${pct}%; background-color: ${color}; height:100%; transition:width 0.3s;"></div>
         </div>
       `;
       categoriesContainer.appendChild(row);
@@ -426,14 +438,12 @@ function renderDashboardWithData(data) {
       const color = sevColors[sev] || 'var(--text-main)';
       const row = document.createElement('div');
       row.className = 'stat-row';
-      row.style.flexDirection = 'column';
-      row.style.alignItems = 'stretch';
       row.innerHTML = `
-        <div style="display:flex; justify-content:space-between; font-size:9px; margin-bottom:2px;">
+        <div style="display:flex; justify-content:space-between; font-size:11px; margin-bottom:4px;">
           <span>${sev}</span>
           <span style="color:${color}; font-weight:bold;">${count} (${pct}%)</span>
         </div>
-        <div class="stat-progress-bg" style="background:#111; border-radius:3px; height:5px; width:100%; overflow:hidden; border: 1px solid #222;">
+        <div class="stat-progress-bg" style="background:#111; border-radius:3px; height:6px; width:100%; overflow:hidden; border: 1px solid rgba(255,255,255,0.05);">
           <div class="stat-progress-fill" style="width: ${pct}%; background-color: ${color}; height:100%; transition:width 0.3s;"></div>
         </div>
       `;
@@ -510,16 +520,18 @@ function renderConicDonut(stats) {
   const safeEnd = safePct;
   const warnEnd = safePct + warnPct;
 
-  document.getElementById('count-safe').innerText = stats.safe;
-  document.getElementById('count-warn').innerText = stats.suspicious;
-  document.getElementById('count-danger').innerText = stats.phishing;
+  document.getElementById('count-safe').innerText = stats.safe || 0;
+  document.getElementById('count-warn').innerText = stats.suspicious || 0;
+  document.getElementById('count-danger').innerText = stats.phishing || 0;
 
   const chart = document.getElementById('traffic-chart');
-  chart.style.background = `conic-gradient(
-    var(--safe-green) 0% ${safeEnd}%, 
-    var(--warn-orange) ${safeEnd}% ${warnEnd}%, 
-    var(--danger-red) ${warnEnd}% 100%
-  )`;
+  if (chart) {
+    chart.style.background = `conic-gradient(
+      var(--safe-green) 0% ${safeEnd}%, 
+      var(--warn-orange) ${safeEnd}% ${warnEnd}%, 
+      var(--danger-red) ${warnEnd}% 100%
+    )`;
+  }
 }
 
 function modifyList(listType, action, domain) {

@@ -1,181 +1,299 @@
 <!doctype html>
-<html>
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="stylesheet" href="popup.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WADE Security Shield</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Space+Grotesk:wght@400;700&display=swap" rel="stylesheet" />
     <style>
+      :root {
+        --bg-dark: #040409;
+        --panel-bg: rgba(12, 12, 20, 0.7);
+        --cyan: #00f3ff;
+        --cyan-glow: rgba(0, 243, 255, 0.3);
+        --red: #ff003c;
+        --red-glow: rgba(255, 0, 60, 0.3);
+        --green: #00ff66;
+        --green-glow: rgba(0, 255, 102, 0.2);
+        --orange: #ffa500;
+        --text-main: #f0f0f5;
+        --text-muted: #8e90a6;
+        --font-primary: 'Space Grotesk', sans-serif;
+        --font-secondary: 'Outfit', sans-serif;
+      }
+
       body {
-        width: 350px;
-        background: #050505;
-        color: white;
-        font-family: 'Courier New', monospace;
+        width: 360px;
+        background-color: var(--bg-dark);
+        background-image: 
+          radial-gradient(circle at 50% 0%, rgba(0, 243, 255, 0.05) 0%, transparent 50%),
+          linear-gradient(rgba(255, 255, 255, 0.005) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255, 255, 255, 0.005) 1px, transparent 1px);
+        background-size: 100% 100%, 30px 30px, 30px 30px;
+        color: var(--text-main);
+        font-family: var(--font-primary);
         margin: 0;
         overflow-x: hidden;
+        box-sizing: border-box;
+      }
+
+      /* Premium Glass Layout */
+      .glass-panel {
+        background: var(--panel-bg);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 12px;
       }
 
       .tabs {
         display: flex;
-        border-bottom: 1px solid #333;
-        background: #111;
+        background: rgba(10, 10, 15, 0.9);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        position: sticky;
+        top: 0;
+        z-index: 50;
       }
       .tab {
         flex: 1;
-        padding: 10px;
+        padding: 12px;
         text-align: center;
         cursor: pointer;
-        color: #888;
-        transition: 0.3s;
+        color: var(--text-muted);
+        transition: all 0.3s;
         font-weight: bold;
+        font-size: 11px;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
       }
       .tab.active {
-        color: #00f3ff;
-        border-bottom: 2px solid #00f3ff;
-        background: #0a0a0a;
+        color: var(--cyan);
+        border-bottom: 2px solid var(--cyan);
+        background: rgba(0, 243, 255, 0.03);
       }
 
       .view {
         display: none;
-        padding: 15px;
+        padding: 20px;
+        box-sizing: border-box;
       }
       .view.active {
         display: block;
+        animation: fadeIn 0.3s ease-out;
+      }
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(3px); }
+        to { opacity: 1; transform: translateY(0); }
       }
 
-      /* SCANNER STYLES */
+      /* Circular SVG Progress Ring */
       .ring-container {
         position: relative;
-        width: 120px;
-        height: 120px;
-        margin: 0 auto 20px;
+        width: 110px;
+        height: 110px;
+        margin: 0 auto 15px;
       }
-      .ring-circle {
+      .circular-chart {
         width: 100%;
         height: 100%;
-        border-radius: 50%;
-        border: 5px solid #333;
-        box-sizing: border-box;
-        transition: border-color 0.5s;
+      }
+      .circle-bg {
+        fill: none;
+        stroke: rgba(255, 255, 255, 0.03);
+        stroke-width: 3;
+      }
+      .circle {
+        fill: none;
+        stroke-width: 3;
+        stroke-linecap: round;
+        transition: stroke-dasharray 0.8s ease-out, stroke 0.5s;
       }
       .score-text {
         position: absolute;
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
-        font-size: 32px;
+        font-family: var(--font-secondary);
+        font-size: 28px;
+        font-weight: 800;
+        color: white;
+        text-shadow: 0 0 10px rgba(255,255,255,0.2);
+      }
+
+      /* Threat Progress Meter */
+      .meter-wrapper {
+        margin: 15px 0;
+      }
+      .meter-label {
+        display: flex;
+        justify-content: space-between;
+        font-size: 10px;
+        color: var(--text-muted);
+        margin-bottom: 4px;
+        text-transform: uppercase;
+      }
+      .meter-bg {
+        background: rgba(255, 255, 255, 0.05);
+        height: 6px;
+        border-radius: 4px;
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.03);
+      }
+      .meter-fill {
+        height: 100%;
+        width: 0%;
+        background: var(--green);
+        transition: width 0.8s ease-out, background-color 0.5s;
+        box-shadow: 0 0 8px var(--green-glow);
+      }
+
+      /* Card Grid styling */
+      .card-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-top: 15px;
+      }
+      .card-row {
+        padding: 12px 14px;
+        display: flex;
+        flex-direction: column;
+        border-left: 3px solid var(--cyan);
+      }
+      .card-row.warning { border-left-color: var(--orange); }
+      .card-row.danger { border-left-color: var(--red); }
+      .card-row.success { border-left-color: var(--green); }
+
+      .card-lbl {
+        color: var(--text-muted);
+        font-size: 9px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 4px;
+      }
+      .card-val {
+        color: #fff;
+        font-weight: 600;
+        font-size: 12px;
+      }
+
+      /* Interactive Buttons */
+      button {
+        background: var(--cyan);
+        color: #000;
+        border: none;
+        padding: 12px;
+        width: 100%;
         font-weight: bold;
+        font-family: inherit;
+        font-size: 12px;
+        cursor: pointer;
+        margin-top: 12px;
+        border-radius: 8px;
+        transition: all 0.2s;
+      }
+      button:hover {
+        opacity: 0.9;
+        box-shadow: 0 0 10px var(--cyan-glow);
+      }
+      .btn-outline {
+        background: transparent;
+        color: var(--cyan);
+        border: 1px solid var(--cyan);
+      }
+      .btn-outline:hover {
+        background: rgba(0, 243, 255, 0.05);
         color: white;
       }
 
-      .data-grid {
-        display: grid;
-        grid-template-columns: 1fr;
-        gap: 10px;
-        text-align: left;
-        font-size: 12px;
-      }
-      .data-row {
-        background: #111;
-        padding: 10px;
-        border-radius: 4px;
-        border-left: 3px solid #333;
-      }
-      .label {
-        color: #888;
-        font-size: 10px;
-        text-transform: uppercase;
-        display: block;
-        margin-bottom: 4px;
-      }
-      .value {
-        color: #fff;
-        font-weight: bold;
-      }
-
-      .harm-box {
-        border: 1px solid #ff003c;
-        background: rgba(255, 0, 60, 0.1);
-        padding: 10px;
-        margin-top: 10px;
-        border-radius: 4px;
-        display: none;
-      }
-
-      /* HISTORY STYLES */
-      .history-item {
-        border-bottom: 1px solid #222;
+      /* Skeleton loader UI */
+      .skeleton-container {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
         padding: 10px 0;
+      }
+      .skeleton-circle {
+        width: 90px;
+        height: 90px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.03);
+        margin: 0 auto;
+        animation: pulse 1.5s infinite ease-in-out;
+      }
+      .skeleton-line {
+        height: 40px;
+        border-radius: 8px;
+        background: rgba(255,255,255,0.03);
+        animation: pulse 1.5s infinite ease-in-out;
+      }
+      @keyframes pulse {
+        0%, 100% { opacity: 0.5; }
+        50% { opacity: 1; background: rgba(255,255,255,0.06); }
+      }
+
+      /* Settings Drawer Overlay and Slide */
+      .drawer {
+        position: fixed;
+        top: 0;
+        right: -260px;
+        width: 250px;
+        height: 100%;
+        background: rgba(8, 8, 12, 0.95);
+        backdrop-filter: blur(16px);
+        box-shadow: -5px 0 25px rgba(0,0,0,0.7);
+        z-index: 100;
+        padding: 20px;
+        box-sizing: border-box;
+        transition: right 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        border-left: 1px solid rgba(0, 243, 255, 0.2);
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+      }
+      .drawer.open {
+        right: 0;
+      }
+      .drawer-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
+        border-bottom: 1px solid rgba(255,255,255,0.08);
+        padding-bottom: 12px;
+        margin-bottom: 20px;
       }
-      .h-url {
-        font-size: 11px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        max-width: 220px;
-        color: #ccc;
-      }
-      .h-score {
+      .drawer-title {
+        font-size: 14px;
         font-weight: bold;
-        font-size: 12px;
+        color: var(--cyan);
+        text-transform: uppercase;
       }
-      .safe {
-        color: #00f3ff;
-      }
-      .sus {
-        color: #ffa500;
-      }
-      .danger {
-        color: #ff003c;
-      }
-
-      /* BUTTONS */
-      button {
-        background: #00f3ff;
-        color: #000;
-        border: none;
-        padding: 10px;
-        width: 100%;
-        font-weight: bold;
+      .drawer-close {
+        color: var(--text-muted);
+        font-size: 18px;
         cursor: pointer;
-        margin-top: 15px;
-        border-radius: 4px;
-      }
-      button:hover {
-        background: #fff;
-      }
-
-      /* DASHBOARD BUTTON STYLE */
-      .btn-dash {
         background: transparent;
-        color: #00f3ff;
-        border: 1px solid #00f3ff;
-        margin-top: 10px;
-      }
-      .btn-dash:hover {
-        background: rgba(0, 243, 255, 0.1);
-        color: #fff;
+        border: none;
+        width: auto;
+        padding: 0;
+        margin: 0;
       }
 
-      /* DANGER / RESET BUTTON STYLE */
-      .btn-danger {
-        background: #222;
-        color: #ff003c;
-        border: 1px solid #ff003c;
-        margin-top: 20px;
+      /* Switch layout */
+      .switch-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
       }
-      .btn-danger:hover {
-        background: #ff003c;
-        color: white;
+      .switch-label {
+        font-size: 12px;
+        font-weight: 600;
       }
-
-      /* TOGGLE SWITCH STYLES */
       .switch {
         position: relative;
         display: inline-block;
-        width: 38px;
-        height: 20px;
+        width: 36px;
+        height: 18px;
       }
       .switch input {
         opacity: 0;
@@ -185,266 +303,217 @@
       .slider {
         position: absolute;
         cursor: pointer;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background-color: #333;
-        transition: 0.4s;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background-color: #222;
+        transition: 0.3s;
         border-radius: 20px;
+        border: 1px solid rgba(255,255,255,0.05);
       }
       .slider:before {
         position: absolute;
         content: '';
-        height: 14px;
-        width: 14px;
-        left: 3px;
-        bottom: 3px;
-        background-color: white;
-        transition: 0.4s;
+        height: 12px;
+        width: 12px;
+        left: 2px;
+        bottom: 2px;
+        background-color: #aaa;
+        transition: 0.3s;
         border-radius: 50%;
       }
       input:checked + .slider {
-        background-color: #00f3ff;
+        background-color: var(--cyan);
       }
       input:checked + .slider:before {
         transform: translateX(18px);
+        background-color: #000;
       }
 
-      /* LIGHT MODE OVERRIDES */
+      /* History layout */
+      .history-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 0;
+        border-bottom: 1px solid rgba(255,255,255,0.03);
+      }
+      .h-url {
+        font-size: 11px;
+        font-weight: 500;
+        max-width: 220px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .h-score {
+        font-size: 11px;
+        font-weight: bold;
+      }
+
+      /* Light Theme Overrides */
       body.light-mode {
-        background: #f5f5fa;
-        color: #111;
+        background-color: #f6f7fb;
+        background-image: 
+          radial-gradient(circle at 50% 0%, rgba(0, 136, 204, 0.05) 0%, transparent 50%),
+          linear-gradient(rgba(0, 0, 0, 0.01) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(0, 0, 0, 0.01) 1px, transparent 1px);
+        color: #1a1a24;
+      }
+      body.light-mode .glass-panel {
+        background: rgba(255, 255, 255, 0.8);
+        border-color: rgba(0, 0, 0, 0.08);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
       }
       body.light-mode .tabs {
-        background: #e5e5ea;
-        border-bottom: 1px solid #ccc;
-      }
-      body.light-mode .tab {
-        color: #666;
+        background: #e9ebf2;
+        border-bottom-color: rgba(0,0,0,0.08);
       }
       body.light-mode .tab.active {
         color: #0088cc;
-        border-bottom: 2px solid #0088cc;
-        background: #f5f5fa;
+        background: rgba(0, 136, 204, 0.04);
       }
-      body.light-mode .score-text {
-        color: #111;
+      body.light-mode .score-text { color: #1a1a24; }
+      body.light-mode .card-val { color: #1a1a24; }
+      body.light-mode .drawer {
+        background: rgba(255, 255, 255, 0.98);
+        border-left-color: rgba(0,0,0,0.08);
       }
-      body.light-mode .data-row {
-        background: #fff;
-        border-left: 3px solid #ccc;
-      }
-      body.light-mode .label {
-        color: #666;
-      }
-      body.light-mode .value {
-        color: #111;
-      }
-      body.light-mode #view-controls div {
-        background: #fff !important;
-        border-color: #ddd !important;
-      }
-      body.light-mode #view-controls span, body.light-mode #view-controls h4 {
-        color: #111 !important;
-      }
-      body.light-mode #report-domain-input, body.light-mode #report-type, body.light-mode #report-comment {
+      body.light-mode .drawer-title { color: #0088cc; }
+      body.light-mode input, body.light-mode select, body.light-mode textarea {
         background: #fff !important;
         border-color: #ccc !important;
-        color: #111 !important;
+        color: #1a1a24 !important;
       }
     </style>
   </head>
   <body>
+    <!-- Top tabbed navigations -->
     <div class="tabs">
-      <div class="tab active" id="tab-scan">SCANNER</div>
-      <div class="tab" id="tab-history">HISTORY</div>
-      <div class="tab" id="tab-controls">CONTROLS</div>
+      <div class="tab active" id="tab-scan" role="tab" aria-selected="true">Scanner</div>
+      <div class="tab" id="tab-history" role="tab" aria-selected="false">History</div>
+      <div class="tab" id="tab-controls" role="tab" aria-selected="false">Controls</div>
     </div>
 
+    <!-- Active Shield Scanner View -->
     <div id="view-scan" class="view active">
-      <div class="ring-container">
-        <div class="ring-circle" id="score-ring"></div>
-        <div class="score-text" id="score-num">--</div>
-        <div
-          style="
-            position: absolute;
-            bottom: -20px;
-            width: 100%;
-            text-align: center;
-            font-size: 10px;
-            color: #888;
-          "
-        >
-          RISK SCORE
+      <!-- Skeleton Loading State -->
+      <div id="scan-skeleton" class="skeleton-container" style="display: none;">
+        <div class="skeleton-circle"></div>
+        <div class="skeleton-line" style="height:20px;"></div>
+        <div class="skeleton-line"></div>
+        <div class="skeleton-line"></div>
+      </div>
+
+      <!-- Real Data State -->
+      <div id="scan-real-data">
+        <div class="ring-container">
+          <svg class="circular-chart" viewBox="0 0 36 36">
+            <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+            <path class="circle" id="progress-circle" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" stroke="var(--cyan)" stroke-dasharray="0, 100" />
+          </svg>
+          <div class="score-text" id="score-num">--</div>
+        </div>
+
+        <div class="meter-wrapper">
+          <div class="meter-label">
+            <span>Threat Severity Meter</span>
+            <span id="meter-level-text">Idle</span>
+          </div>
+          <div class="meter-bg">
+            <div class="meter-fill" id="meter-fill"></div>
+          </div>
+        </div>
+
+        <div class="card-grid">
+          <div class="card-row glass-panel" id="card-domain-container">
+            <span class="card-lbl">Inspected host</span>
+            <span class="card-val" id="domain-name" style="color:var(--cyan);">Idle</span>
+          </div>
+          <div class="card-row glass-panel">
+            <span class="card-lbl">Registry Duration (WHOIS)</span>
+            <span class="card-val" id="domain-age">--</span>
+          </div>
+          <div class="card-row glass-panel">
+            <span class="card-lbl">VirusTotal reputation</span>
+            <span class="card-val" id="vt-data">--</span>
+          </div>
         </div>
       </div>
 
-      <div id="harm-display" class="harm-box">
-        <div style="color: #ff9999; margin-bottom: 5px">
-          ⚠️ <strong>THREAT:</strong> <span id="harm-cause"></span>
-        </div>
-        <div style="color: #fff">💥 <strong>EFFECT:</strong> <span id="harm-effect"></span></div>
-      </div>
-
-      <div class="data-grid" style="margin-top: 15px">
-        <div class="data-row">
-          <span class="label">Target Domain</span>
-          <span class="value" id="domain-name" style="color: #00f3ff">Scanning...</span>
-        </div>
-        <div class="data-row">
-          <span class="label">Domain Age</span>
-          <span class="value" id="domain-age">--</span>
-        </div>
-        <div class="data-row">
-          <span class="label">VirusTotal Intelligence</span>
-          <span class="value" id="vt-data">--</span>
-        </div>
-      </div>
-
-      <button id="scan-btn">🔄 RE-SCAN TAB</button>
-      <button
-        id="trust-domain-btn"
-        class="btn-dash"
-        style="border-color: #00ff66; color: #00ff66; margin-top: 10px"
-      >
-        ✅ TRUST THIS SITE
-      </button>
-      <button id="open-dashboard" class="btn-dash">📊 OPEN COMMAND CENTER</button>
+      <button id="scan-btn" class="btn-outline" style="border-radius: 8px;">🔄 RE-AUDIT ACTIVE TAB</button>
+      <button id="trust-domain-btn" style="background:var(--green); color:#000; border-radius: 8px;">✅ TRUST ACTIVE DOMAIN</button>
+      <button id="open-dashboard" class="btn-outline" style="border-radius: 8px; border-color:var(--cyan); color:var(--cyan);">📊 AUDIT CENTER PORTAL</button>
     </div>
 
+    <!-- History Logs View -->
     <div id="view-history" class="view">
-      <div style="text-align: right; margin-bottom: 10px">
-        <span style="font-size: 10px; color: #555; cursor: pointer" id="clear-history"
-          >CLEAR LOGS</span
-        >
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+        <span style="font-size:11px; font-weight:bold; color:var(--text-muted);">Session Logs</span>
+        <button id="clear-history" style="width:auto; padding:4px 8px; margin:0; font-size:10px; border:1px solid var(--red); color:var(--red); background:transparent;">CLEAR</button>
       </div>
 
-      <div id="history-list">
-        <div style="text-align: center; color: #555; margin-top: 20px">No recent scans.</div>
+      <div id="history-list" style="max-height: 220px; overflow-y:auto; margin-bottom: 15px;">
+        <div style="text-align: center; color: var(--text-muted); padding-top: 30px;">Empty Logs.</div>
       </div>
 
-      <button id="btn-reset" class="btn-danger">⚠️ RESET TRUSTED SITES</button>
-      <div style="font-size: 10px; color: #555; text-align: center; margin-top: 5px">
-        (Forget "Proceed Anyway" choices)
-      </div>
+      <button id="btn-reset" style="background:transparent; border:1px solid var(--red); color:var(--red);">⚠️ RESET TRUST EXCLUSIONS</button>
     </div>
 
+    <!-- Quick Reports & Action View -->
     <div id="view-controls" class="view">
-      <div
-        style="
-          background: #111;
-          padding: 15px;
-          border-radius: 8px;
-          border: 1px solid #222;
-          margin-bottom: 15px;
-        "
-      >
-        <div
-          style="
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 12px;
-          "
-        >
-          <span style="font-size: 13px; font-weight: bold; color: #fff">Auto Scan Interceptor</span>
+      <div class="glass-panel" style="padding:15px; margin-bottom: 15px; border-left:3px solid var(--cyan);">
+        <div class="switch-row" style="margin-bottom:0;">
+          <div>
+            <div style="font-size:12px; font-weight:bold;">Active Interception</div>
+            <div style="font-size:9px; color:var(--text-muted); margin-top:2px;">Scan incoming requests in background</div>
+          </div>
           <label class="switch">
             <input type="checkbox" id="toggle-autoscan" checked />
             <span class="slider"></span>
           </label>
         </div>
-        <p style="font-size: 10px; color: #666; margin: 0">
-          Automatically scan all incoming navigation requests in real-time.
-        </p>
-        <div
-          style="
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 15px;
-            padding-top: 15px;
-            border-top: 1px solid #222;
-          "
-        >
-          <span style="font-size: 13px; font-weight: bold; color: #fff" id="darkmode-label">Dark Mode Theme</span>
+      </div>
+
+      <div class="glass-panel" style="padding: 15px;">
+        <h4 style="margin-top:0; margin-bottom:4px; font-size:11px; color:var(--cyan); text-transform:uppercase;">SOC Threat Reporter</h4>
+        <p style="font-size:9px; color:var(--text-muted); margin-top:0; margin-bottom:12px;">Submit false positive links directly to WADE intelligence database.</p>
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <input type="text" id="report-domain-input" placeholder="URL Hostname" style="padding:8px; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.08); color:white; border-radius:6px; font-family:inherit; font-size:11px;" readonly />
+          <select id="report-type" style="padding:8px; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.08); color:white; border-radius:6px; font-family:inherit; font-size:11px; cursor:pointer;">
+            <option value="false_positive">Report False Positive (Safe)</option>
+            <option value="phishing">Report Unblocked Exploit (Malicious)</option>
+          </select>
+          <textarea id="report-comment" placeholder="Provide details (Optional)..." style="padding:8px; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.08); color:white; border-radius:6px; font-family:inherit; font-size:11px; height:45px; resize:none;"></textarea>
+          <button id="btn-submit-report" style="margin-top:4px; padding:10px;">SUBMIT AUDIT</button>
+        </div>
+        <div id="report-status" style="font-size:10px; text-align:center; margin-top:8px; font-weight:bold;"></div>
+      </div>
+
+      <button id="open-drawer-btn" class="btn-outline" style="margin-top:15px; border-color:var(--cyan); color:var(--cyan);">⚙️ POPUP DISPLAY PREFERENCES</button>
+    </div>
+
+    <!-- Slide-in popup Settings Drawer -->
+    <div class="drawer" id="settings-drawer">
+      <div>
+        <div class="drawer-header">
+          <span class="drawer-title">Settings Panel</span>
+          <button class="drawer-close" id="close-drawer-btn">×</button>
+        </div>
+
+        <div class="switch-row">
+          <span class="switch-label">Dark Theme Interface</span>
           <label class="switch">
             <input type="checkbox" id="toggle-darkmode" checked />
             <span class="slider"></span>
           </label>
         </div>
-      </div>
 
-      <div style="background: #111; padding: 15px; border-radius: 8px; border: 1px solid #222">
-        <h4
-          style="
-            margin-top: 0;
-            margin-bottom: 8px;
-            font-size: 12px;
-            color: #00f3ff;
-            text-transform: uppercase;
-          "
-        >
-          Quick Threat Report
-        </h4>
-        <p style="font-size: 9px; color: #666; margin-top: 0; margin-bottom: 12px">
-          Submit false positive domains or phishing links directly to WADE analysts.
-        </p>
-        <div style="display: flex; flex-direction: column; gap: 8px">
-          <input
-            type="text"
-            id="report-domain-input"
-            placeholder="Domain (e.g. phish-site.com)"
-            style="
-              padding: 8px;
-              background: #050505;
-              border: 1px solid #333;
-              color: white;
-              border-radius: 4px;
-              font-family: inherit;
-              font-size: 11px;
-            "
-            readonly
-          />
-          <select
-            id="report-type"
-            style="
-              padding: 8px;
-              background: #050505;
-              border: 1px solid #333;
-              color: white;
-              border-radius: 4px;
-              font-family: inherit;
-              font-size: 11px;
-              cursor: pointer;
-            "
-          >
-            <option value="false_positive">Report False Positive (Safe)</option>
-            <option value="phishing">Report Unblocked Threat (Malicious)</option>
-          </select>
-          <textarea
-            id="report-comment"
-            placeholder="Optional comments..."
-            style="
-              padding: 8px;
-              background: #050505;
-              border: 1px solid #333;
-              color: white;
-              border-radius: 4px;
-              font-family: inherit;
-              font-size: 11px;
-              height: 50px;
-              resize: none;
-            "
-          ></textarea>
-          <button id="btn-submit-report" style="margin-top: 5px; padding: 8px">
-            Submit Report
-          </button>
+        <div style="font-size:10px; color:var(--text-muted); line-height: 1.5; margin-top:20px;">
+          Adjusting display preferences updates the extension interface instantly and saves the configuration locally inside Chrome persistent storage.
         </div>
-        <div
-          id="report-status"
-          style="font-size: 10px; text-align: center; margin-top: 8px; font-weight: bold"
-        ></div>
+      </div>
+      
+      <div style="font-size:9px; color:var(--text-muted); text-align:center; border-top:1px solid rgba(255,255,255,0.05); padding-top:10px;">
+        WADE Security Shield v2.1.0
       </div>
     </div>
 

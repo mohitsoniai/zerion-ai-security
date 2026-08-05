@@ -48,7 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const reportInput = document.getElementById('report-domain-input');
         if (reportInput) reportInput.value = domain;
       } catch (e) {
-        console.debug('Failed to extract domain age', e);
+        console.debug('Failed to extract domain', e);
       }
     }
   });
@@ -59,6 +59,16 @@ document.addEventListener('DOMContentLoaded', () => {
     toggleAutoscan.addEventListener('change', (e) => {
       chrome.storage.local.set({ autoScan: e.target.checked });
     });
+  }
+
+  // Settings Drawer toggle
+  const openDrawerBtn = document.getElementById('open-drawer-btn');
+  const closeDrawerBtn = document.getElementById('close-drawer-btn');
+  const drawer = document.getElementById('settings-drawer');
+  
+  if (openDrawerBtn && closeDrawerBtn && drawer) {
+    openDrawerBtn.addEventListener('click', () => drawer.classList.add('open'));
+    closeDrawerBtn.addEventListener('click', () => drawer.classList.remove('open'));
   }
 
   // Quick Threat Report Submission
@@ -92,7 +102,7 @@ document.addEventListener('DOMContentLoaded', () => {
         body: JSON.stringify({ domain: domain, report_type: type, comment: comment })
       })
       .then(res => res.json())
-      .then(data => {
+      .then(() => {
         if (status) {
           status.style.color = '#00ff66';
           status.innerText = '🚀 Report submitted successfully!';
@@ -102,7 +112,7 @@ document.addEventListener('DOMContentLoaded', () => {
           if (status) status.innerText = '';
         }, 3000);
       })
-      .catch(err => {
+      .catch(() => {
         if (status) {
           status.style.color = '#ff003c';
           status.innerText = '❌ Submission failed.';
@@ -128,7 +138,7 @@ document.addEventListener('DOMContentLoaded', () => {
               chrome.storage.local.set({ userTrust: trust }, () => {
                 btnTrust.innerText = '✅ SITE TRUSTED';
                 setTimeout(() => {
-                  btnTrust.innerText = '✅ TRUST THIS SITE';
+                  btnTrust.innerText = '✅ TRUST ACTIVE DOMAIN';
                 }, 2000);
               });
             });
@@ -162,7 +172,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         setTimeout(() => {
           loadHistory();
-          btn.innerText = '⚠️ RESET TRUSTED SITES';
+          btn.innerText = '⚠️ RESET TRUST EXCLUSIONS';
           btn.style.borderColor = '#ff003c';
           btn.style.color = '#ff003c';
         }, 2000);
@@ -186,9 +196,14 @@ function switchTab(viewName) {
 function requestScan() {
   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
     if (tabs[0]?.url) {
-      document.getElementById('domain-name').innerText = new URL(tabs[0].url).hostname;
+      // Toggle skeleton loading
+      document.getElementById('scan-real-data').style.display = 'none';
+      document.getElementById('scan-skeleton').style.display = 'flex';
+      
+      const hostname = new URL(tabs[0].url).hostname;
+      document.getElementById('domain-name').innerText = hostname;
+      
       chrome.runtime.sendMessage({ action: 'ANALYZE_URL', url: tabs[0].url }, (response) => {
-        // Ignore the response here if we're relying on the background script to send SCAN_RESULT
         if (response && response.success && response.data) {
           updateDashboard(response.data);
         }
@@ -197,43 +212,61 @@ function requestScan() {
   });
 }
 
+function animateScoreCount(target) {
+  const numEl = document.getElementById('score-num');
+  let current = 0;
+  if (target === 0) {
+    numEl.innerText = 0;
+    return;
+  }
+  const step = Math.ceil(target / 15);
+  const timer = setInterval(() => {
+    current += step;
+    if (current >= target) {
+      numEl.innerText = target;
+      clearInterval(timer);
+    } else {
+      numEl.innerText = current;
+    }
+  }, 25);
+}
+
 function updateDashboard(data) {
+  // Hide skeleton, show data
+  document.getElementById('scan-skeleton').style.display = 'none';
+  document.getElementById('scan-real-data').style.display = 'block';
+
   if (!data) return;
 
   // Score Ring
   const score = data.risk_score || 0;
-  const ring = document.getElementById('score-ring');
-  const scoreNum = document.getElementById('score-num');
+  animateScoreCount(score);
 
-  scoreNum.innerText = score;
+  const circle = document.getElementById('progress-circle');
+  circle.style.strokeDasharray = `${score}, 100`;
 
-  let color = '#00f3ff'; // Cyan
-  if (score > 30) color = '#ffa500'; // Orange
-  if (score > 75) color = '#ff003c'; // Red
+  let color = 'var(--cyan)';
+  if (score > 30) color = 'var(--orange)';
+  if (score > 75) color = 'var(--red)';
+  circle.style.stroke = color;
 
-  ring.style.borderColor = color;
-  scoreNum.style.color = color;
+  // Meter Update
+  const fill = document.getElementById('meter-fill');
+  fill.style.width = `${score}%`;
+  fill.style.backgroundColor = color;
 
-  // Harm Box (Threat Info)
-  const harmBox = document.getElementById('harm-display');
-  if (score > 50) {
-    harmBox.style.display = 'block';
-    document.getElementById('harm-cause').innerText = data.threat_type || 'Unknown Threat';
-    document.getElementById('harm-effect').innerText = data.harm || 'Potential Security Risk';
-  } else {
-    harmBox.style.display = 'none';
-  }
+  const levelText = document.getElementById('meter-level-text');
+  if (score > 75) levelText.innerText = 'High Risk';
+  else if (score > 30) levelText.innerText = 'Suspicious';
+  else levelText.innerText = 'Safe';
 
   // Details
-  if (data.target_domain) {
-    document.getElementById('domain-name').innerText = data.target_domain;
-  }
+  const domain = data.target_domain || (data.url ? new URL(data.url).hostname : 'unknown');
+  document.getElementById('domain-name').innerText = domain;
   document.getElementById('domain-name').style.color = color;
-  document.getElementById('domain-age').innerText = data.domain_age || '--';
+  document.getElementById('domain-age').innerText = data.domain_age > 0 ? `${data.domain_age} Days` : 'New Domain';
 
-  // Fallback if vt_verdict isn't explicitly passed, use the total to show it scanned
-  const vtDisplay =
-    data.vt_verdict || (data.vt_data ? `Vendors Flagged: ${data.vt_data.malicious}` : '--');
+  const vtDisplay = data.vt_verdict || (data.vt_data ? `Flagged: ${data.vt_data.malicious}/${data.vt_data.total}` : '0 Matches');
   document.getElementById('vt-data').innerText = vtDisplay;
 }
 
@@ -246,7 +279,7 @@ function loadHistory() {
 
     if (history.length === 0) {
       list.innerHTML =
-        "<div style='text-align:center; color:#555; margin-top:20px;'>No recent scans.</div>";
+        "<div style='text-align:center; color:var(--text-muted); margin-top:20px; font-size:11px;'>No recent scans.</div>";
       return;
     }
 
@@ -258,13 +291,16 @@ function loadHistory() {
       if (item.score > 30) colorClass = 'sus';
       if (item.score > 75) colorClass = 'danger';
 
+      const shortUrl = item.url.replace('https://', '').replace('http://', '');
+      const displayUrl = shortUrl.length > 25 ? shortUrl.substring(0, 25) + '...' : shortUrl;
+
       div.innerHTML = `
-                <div>
-                    <div class="h-url" style="color:white;">${item.url.substring(0, 25)}...</div>
-                    <div style="font-size:9px; color:#666;">${item.reason || 'Scan'} | ${item.date}</div>
-                </div>
-                <div class="h-score ${colorClass}">${item.score}</div>
-            `;
+        <div>
+          <div class="h-url" style="color:white; font-weight:600;">${displayUrl}</div>
+          <div style="font-size:9px; color:var(--text-muted);">${item.reason || 'Scan'} | ${item.date}</div>
+        </div>
+        <div class="h-score ${colorClass}" style="font-size:12px; font-weight:bold;">${item.score}</div>
+      `;
       list.appendChild(div);
     });
   });
