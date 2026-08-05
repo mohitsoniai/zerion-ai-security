@@ -1,170 +1,121 @@
-WADE – Web AI Defense Engine
-🛡️ Redefining Web Security Through Artificial Intelligence
+# WADE AI v2 🛡️ (Web AI Defense Engine)
 
-WADE (Web AI Defense Engine) is an AI-powered browser security platform engineered to identify, analyze, and neutralize sophisticated web-based threats in real time. Traditional security solutions primarily depend on static blacklists, signatures, and reputation databases, making them ineffective against newly emerging phishing campaigns, malicious domains, and zero-day attacks. WADE addresses this limitation by leveraging Large Language Models (LLMs), multimodal intelligence, and live threat intelligence feeds to understand the intent and behavior of web content before execution.
+[![Version](https://img.shields.io/badge/version-2.1.0-blue.svg)](https://github.com/mohitsoniai/WADE-AI-extension)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](#license)
+[![Status](https://img.shields.io/badge/status-Stable-success)](#status)
+[![Platform](https://img.shields.io/badge/platform-Chrome--Extension-orange.svg)](#installation)
+[![Docker](https://img.shields.io/badge/docker-verified-blue.svg)](#docker-container-quickstart)
 
-By combining semantic reasoning, visual analysis, and contextual threat assessment, WADE transforms browser security from reactive detection into proactive prevention.
+WADE AI v2 (Web AI Defense Engine) is a next-generation, AI-powered browser security platform designed to identify, analyze, and neutralize sophisticated web-based threats in real-time. Traditional security solutions rely on static blacklists, leaving users vulnerable to zero-day phishing campaigns, credential harvesting, and obfuscated malicious scripts.
 
-Vision
+WADE AI v2 solves this by integrating **multi-provider Threat Intelligence** (AbuseIPDB, Google Safe Browsing, URLScan, VirusTotal, OpenPhish), **dual Large Language Model (LLM)** intent audits, and local SQLite caches to deliver subsecond verdicts with zero-trust execution.
 
-The modern internet is increasingly targeted by advanced phishing operations, credential theft campaigns, deceptive web applications, and AI-generated social engineering attacks. Static detection systems often fail because they can only identify threats that have already been discovered.
+> [!IMPORTANT]
+> **Open Architecture:** This platform is fully open and does not require account creation, passwords, logins, or API keys for browser interaction. The extension and backend function out-of-the-box immediately upon installation.
 
-WADE was created to establish a new security paradigm where artificial intelligence continuously evaluates web content, user-facing elements, scripts, and behavioral indicators to determine whether a webpage represents a legitimate service or a potential threat.
+---
 
-Instead of asking:
+## 🏗️ Architecture Overview
 
-“Has this URL been reported before?”
+WADE v2 follows a **Service-Oriented Architecture (SOA)** consisting of:
 
-WADE asks:
+1. **The Eyes (Frontend):** A Manifest V3 Chrome Extension that tracks DOM changes, intercepts navigation events, and runs an out-of-band URL hover auditor.
+2. **The Brain (Backend):** A FastAPI Python engine coordinating VirusTotal, Google Safe Browsing, AbuseIPDB, URLScan, and active phishing databases (URLHaus, OpenPhish).
+3. **The Intelligence Layer (AI):** A dual-LLM pipeline utilizing **Groq (Llama 3.3 70B)** for intent analysis and **Google Gemini 1.5 Flash** for fallback classification.
+4. **The Storage (Database):** A SQLite database tracking threat audit logs and keeping caches (`threat_intel_cache`, `api_cache`) to prevent rate-limit depletion.
 
-“What is this webpage trying to do?”
+For details, view the [docs/SYSTEM_ARCHITECTURE.md](file:///c:/Users/MOHIT%20SONI/WADE-AI-Defense/docs/SYSTEM_ARCHITECTURE.md).
 
-This shift enables detection of previously unseen attacks and significantly improves protection against evolving cyber threats.
+---
 
-Core Capabilities
-Intelligent Threat Understanding
+## 🚀 Key Features
 
-WADE utilizes advanced language models to evaluate webpage content, metadata, JavaScript behavior, forms, redirects, and contextual indicators. Rather than relying solely on signatures, the system interprets intent and identifies malicious objectives such as credential harvesting, financial fraud, malware delivery, and social engineering.
+* **Multi-Provider OSINT Orchestrator:** Live API evaluations via VirusTotal, Google Safe Browsing, AbuseIPDB, URLScan, OpenPhish, and URLHaus.
+* **Unified AI Reasoning:** Returns advanced telemetry (Threat Score, Confidence rating, Category, Severity, Suspicious Indicators, WHOIS, and SSL summaries).
+* **Advanced Command Center:** A glassmorphic management dashboard featuring timeline charts, filters, domain whitelist controls, and CSV/JSON exporters.
+* **Modern Controls Popup:** Built-in dark mode popup supporting Auto-Scan toggling, manual Rescans, whitelist updates, and direct false-positive reporting.
+* **IPS Real-Time Intervention:** Automatically interrupts high-risk connections and redirects to a secure warning block page.
 
-Multimodal Security Analysis
+---
 
-Through multimodal AI processing, WADE examines both textual and visual components of a webpage. This allows detection of cloned login portals, counterfeit branding, deceptive interfaces, fake verification pages, and other visual attack techniques frequently used in phishing campaigns.
+## 🛠️ Tech Stack
 
-Real-Time Browser Protection
+* **AI Models:** Groq Llama 3.3 (70B), Google Gemini 1.5 Flash
+* **Backend:** Python 3.10, FastAPI, Uvicorn, Async HTTPX, WHOIS & SSL Certificates Parser
+* **Frontend:** Vanilla JS (ES6+), HTML5, CSS3 (Glassmorphism & 3D Tilt), Chrome Extension Manifest V3
+* **Database:** SQLite3
+* **DevOps:** Docker, Docker Compose, GitHub Actions
 
-Integrated directly within the browser environment through Chrome Manifest V3 architecture, WADE continuously monitors page activity and dynamically evaluates newly loaded content without interrupting the browsing experience.
+---
 
-Threat Intelligence Correlation
+## 🗂️ Folder Structure
 
-To enhance accuracy and confidence, AI-generated assessments are correlated with multiple threat intelligence providers including VirusTotal, URLHaus, and Phishing.Database, creating a layered defense model that combines behavioral analysis with global threat data.
+```
+wade-ai-defense/
+├── .github/workflows/     # GitHub Actions
+│   └── deploy.yml
+├── docs/                  # System Architecture Portals
+│   ├── SYSTEM_ARCHITECTURE.md
+│   ├── API_DOCUMENTATION.md
+│   ├── ER_DIAGRAM.md
+│   ├── DEPLOYMENT_DIAGRAM.md
+│   └── DEPLOYMENT_GUIDE.md
+├── backend/               # Modular FastAPI MVC App
+│   ├── app.py             # App entry orchestrator
+│   ├── config/            # Settings & pydantic configuration
+│   ├── controllers/       # API router controllers
+│   ├── database/          # SQLite models, caches, and migrations
+│   ├── middlewares/       # Rate limiting & Helmet secure headers
+│   ├── services/          # Threat Intel & AI Scanner engines
+│   ├── utils/             # Loggers & WHOIS calculators
+│   └── requirements.txt   # Backend requirements
+├── extension/             # Chrome Extension MV3
+│   ├── background.js      # Interceptor background worker
+│   ├── blocked.html       # Intercept warning page
+│   ├── dashboard.html     # Telemetry management console
+│   ├── popup.html         # Custom popup panel
+│   └── icons/             # Graphical assets
+├── Dockerfile             # Multi-stage production container
+└── docker-compose.yml     # Compose script
+```
 
-Dynamic Risk Assessment
+---
 
-Every analyzed webpage receives a contextual threat score generated from multiple factors:
+## 📦 Installation & Setup
 
-AI behavioral analysis
-Domain reputation
-Visual deception indicators
-Script execution patterns
-Credential collection mechanisms
-External intelligence verification
+Please follow the detailed [docs/DEPLOYMENT_GUIDE.md](file:///c:/Users/MOHIT%20SONI/WADE-AI-Defense/docs/DEPLOYMENT_GUIDE.md) to set up WADE AI v2.
 
-This scoring mechanism allows WADE to classify websites based on actual risk rather than simple blacklist presence.
+### Quick Start (Local Backend):
 
-Explainable Security Decisions
+```bash
+# Clone the repository
+git clone https://github.com/mohitsoniai/WADE-AI-extension.git
+cd WADE-AI-Defense
 
-Unlike traditional security tools that provide generic warnings, WADE delivers transparent explanations describing why a webpage was identified as suspicious. This promotes user awareness and trust while improving security decision-making.
+# Configure environment variables
+cp .env.example .env
+# Edit .env and supply your Google Gemini, Groq, and OSINT API keys
 
-Technical Architecture
+# Setup Python Virtual Environment
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+pip install -r backend/requirements.txt
 
-WADE is built around a modular architecture designed for scalability, low-latency inference, and browser-native protection.
+# Run FastAPI server
+python -m backend.app
+```
 
-Artificial Intelligence Layer
+### Docker Container Quickstart:
 
-Groq – Llama 3.3 70B
+```bash
+# Spin up the containers using Compose
+docker-compose up --build
+```
+The server will start running on port `7860`. You can access the Web Command Center Dashboard at `http://localhost:7860/` and verify server health status at `http://localhost:7860/health`.
 
-Responsible for:
+### ☁️ Cloud Deployments:
+* **Render:** Blueprinted automatically via [render.yaml](file:///c:/Users/MOHIT%20SONI/WADE-AI-Defense/render.yaml).
+* **Vercel:** Bypassed and hosted using serverless rules in [vercel.json](file:///c:/Users/MOHIT%20SONI/WADE-AI-Defense/vercel.json).
 
-Intent classification
-Threat reasoning
-Behavioral interpretation
-Security report generation
-Context-aware decision making
-
-Google Gemini 1.5 Flash
-
-Responsible for:
-
-Visual webpage inspection
-Interface analysis
-Screenshot interpretation
-Brand impersonation detection
-Multimodal threat evaluation
-Backend Infrastructure
-
-The backend services are developed using Python and FastAPI to provide a lightweight, high-performance API layer capable of handling concurrent threat analysis requests efficiently.
-
-Core backend responsibilities include:
-
-Threat orchestration
-AI request management
-Reputation lookups
-Data persistence
-Risk-score generation
-Security event logging
-Browser Security Engine
-
-The browser extension operates using Chrome Manifest V3 technologies and continuously observes page activity through service workers and MutationObservers.
-
-Responsibilities include:
-
-DOM monitoring
-Content extraction
-Script observation
-User warning delivery
-Threat interception
-Secure communication with backend services
-Technology Stack
-Layer	Technologies
-AI Models	Groq Llama 3.3 70B, Gemini 1.5 Flash
-Backend	Python, FastAPI, Uvicorn
-Database	SQLite3
-Frontend	HTML5, CSS3, JavaScript ES6+
-Browser Integration	Chrome Manifest V3, Service Workers, MutationObserver
-Threat Intelligence	VirusTotal v3, URLHaus, Phishing.Database
-Deployment	Hugging Face Spaces
-Development Tools	VS Code, Chrome DevTools
-Version Control	Git, GitHub
-Security-First Design Principles
-
-WADE follows a proactive security architecture centered around:
-
-Real-time analysis over static detection
-AI-assisted threat reasoning
-Privacy-conscious data processing
-Explainable decision generation
-Layered threat verification
-Adaptive defense against emerging attacks
-
-The platform is designed to remain effective even when confronting previously unseen threats that do not yet exist in conventional security databases.
-
-Research & Innovation
-
-WADE explores the intersection of:
-
-Artificial Intelligence
-Browser Security
-Cyber Threat Intelligence
-Phishing Detection
-Human-Centered Security
-Multimodal Threat Analysis
-Explainable AI for Cybersecurity
-
-The project demonstrates how modern LLMs can be leveraged not only for content generation but also as intelligent security agents capable of understanding malicious intent in dynamic web environments.
-
-Future Roadmap
-
-Future iterations of WADE aim to introduce:
-
-Autonomous threat hunting
-Real-time JavaScript sandbox execution
-Behavioral malware analysis
-Federated threat intelligence learning
-Enterprise security dashboards
-Cross-browser compatibility
-Adaptive self-learning detection models
-Security Operations Center (SOC) integrations
-AI-powered incident response recommendations
-Project Status
-
-Active Development
-
-WADE is currently being developed as an experimental AI-native cybersecurity platform focused on advancing real-time browser protection against modern phishing, fraud, and zero-day web threats.
-
-Author
-
-Kapil Panchariya
-B.Tech Computer Science & Engineering (Artificial Intelligence)
-Cybersecurity Researcher • AI Developer • Security Enthusiast
-
-“The future of cybersecurity is not recognizing known attacks—it is understanding malicious intent before the attack succeeds.”
+### GitHub Recommended Topics
+`chrome-extension`, `fastapi`, `cybersecurity`, `artificial-intelligence`, `phishing-detection`, `threat-intelligence`, `docker`
