@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: wade-api
+    env: docker
+    dockerfilePath: Dockerfile
+    port: 7860
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: VIRUSTOTAL_API_KEY
+        sync: false
+      - key: URLSCAN_API_KEY
+        sync: false
+      - key: GOOGLE_SAFE_BROWSING_API_KEY
+        sync: false
+      - key: ABUSEIPDB_API_KEY
+        sync: false
