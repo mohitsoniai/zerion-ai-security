@@ -1,0 +1,36 @@
+# Wade AI v2 Ignore rules
+.env
+.env.local
+.env.production
+.env.development
+.env.staging
+.env.test
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+pip-log.txt
+pip-delete-this-directory.txt
+.venv/
+wade_logs.db
+wade_logs.db-journal
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.eslintcache
+.prettiercache
+
+# Chrome Extension / IDE
+.vscode/
+*.code-workspace
+.idea/
+.DS_Store
+Thumbs.db

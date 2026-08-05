@@ -1,6 +1,0 @@
-/etc/passwd
-<script>
-alert(1)
-eval(
-javascript:
-union select
