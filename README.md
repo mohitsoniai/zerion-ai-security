@@ -1,4 +1,9 @@
+<p align="center">
+  <img src="docs/banner.png" alt="Zerion AI Security Banner" width="100%" />
+</p>
+
 # Zerion AI v2 🛡️ (AI-Powered Browser Security Platform)
+
 
 [![Version](https://img.shields.io/badge/version-2.1.0-blue.svg)](https://github.com/mohitsoniai/Zerion AI-AI-extension)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](#license)
