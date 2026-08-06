@@ -159,34 +159,34 @@ Traditional security tools rely on static blacklists, leaving users exposed to z
 
 ```mermaid
 flowchart TD
-    A[🌐 Browser Tab] -->|URL Navigation| B[🧩 Chrome Extension MV3]
-    B -->|Scan Request + API Key| C[⚡ FastAPI Backend :7860]
-    C -->|Cache Hit?| D{SQLite Cache}
-    D -->|Hit| E[⚡ Instant Response]
-    D -->|Miss| F[🔍 Intel Engine]
-    F -->|Concurrent Async| G[🧠 AI Scanner - Gemini / Groq]
-    F -->|Parallel Fetch| H[📡 Threat Intel Feeds]
-    H --> H1[URLhaus]
-    H --> H2[OpenPhish]
-    H --> H3[GitHub Phishing DB]
-    F -->|OSINT APIs| I[🔬 External APIs]
-    I --> I1[VirusTotal]
-    I --> I2[Google Safe Browsing]
-    I --> I3[AbuseIPDB]
-    I --> I4[URLScan.io]
-    G --> J[📊 Risk Score 0-100]
+    A["Browser Tab"] -->|"URL Navigation"| B["Chrome Extension MV3"]
+    B -->|"Scan Request"| C["FastAPI Backend :7860"]
+    C -->|"Cache Hit?"| D{"SQLite Cache"}
+    D -->|"Hit"| E["Instant Response"]
+    D -->|"Miss"| F["Intel Engine"]
+    F -->|"Concurrent Async"| G["AI Scanner (Gemini / Groq)"]
+    F -->|"Parallel Fetch"| H["Threat Intel Feeds"]
+    H --> H1["URLhaus"]
+    H --> H2["OpenPhish"]
+    H --> H3["GitHub Phishing DB"]
+    F -->|"OSINT APIs"| I["External APIs"]
+    I --> I1["VirusTotal"]
+    I --> I2["Google Safe Browsing"]
+    I --> I3["AbuseIPDB"]
+    I --> I4["URLScan.io"]
+    G --> J["Risk Score 0-100"]
     H --> J
     I --> J
-    J -->|Store| D
-    J -->|Log| K[🗃️ SQLite History DB]
-    J -->|Return| L[📄 Security Report]
+    J -->|"Store"| D
+    J -->|"Log"| K["SQLite History DB"]
+    J -->|"Return"| L["Security Report"]
     L --> B
-    B -->|Verdict| M{🔴 Malicious?}
-    M -->|Yes| N[🚫 Block Page + Alert]
-    M -->|No| O[✅ Allow + Badge Update]
-    C -->|Dashboard| P[🖥️ SOC Dashboard]
-    P --> Q[🗺️ Global Threat Map]
-    P --> R[🤖 AI Copilot - Ask Zerion]
+    B -->|"Verdict"| M{"Is Malicious?"}
+    M -->|"Yes"| N["Block Page + Alert"]
+    M -->|"No"| O["Allow + Badge Update"]
+    C -->|"Dashboard"| P["SOC Dashboard"]
+    P --> Q["Global Threat Map"]
+    P --> R["AI Copilot (Ask Zerion)"]
 ```
 
 ---
