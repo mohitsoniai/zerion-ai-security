@@ -17,6 +17,18 @@ class ScanRequest(BaseModel):
     url: str
     username: Optional[str] = "Anonymous"
 
+@router.get("/analyze")
+async def analyze_url_get(url: Optional[str] = None, username: Optional[str] = "Anonymous", background_tasks: BackgroundTasks = BackgroundTasks()) -> dict:
+    """GET route handler for /analyze supporting URL query parameters to prevent 405 Method Not Allowed errors."""
+    if not url:
+        return {
+            "status": "online",
+            "endpoint": "/analyze",
+            "usage": "POST JSON body {'url': 'https://example.com'} or GET ?url=https://example.com"
+        }
+    request = ScanRequest(url=url, username=username)
+    return await analyze_url(request, background_tasks)
+
 @router.post("/analyze")
 async def analyze_url(request: ScanRequest, background_tasks: BackgroundTasks) -> dict:
     """
@@ -174,6 +186,14 @@ class ReportRequest(BaseModel):
     report_type: str
     comment: Optional[str] = ""
 
+@router.get("/report")
+async def report_domain_get(domain: Optional[str] = None, report_type: Optional[str] = "phishing", comment: Optional[str] = "") -> dict:
+    """GET route handler for /report."""
+    if not domain:
+        return {"status": "online", "endpoint": "/report", "usage": "POST JSON body {'domain': 'example.com', 'report_type': 'phishing'}"}
+    request = ReportRequest(domain=domain, report_type=report_type or "phishing", comment=comment or "")
+    return await report_domain(request)
+
 @router.post("/report")
 async def report_domain(request: ReportRequest) -> dict:
     """Records quick threat reports from Chrome Extension users."""
@@ -190,6 +210,14 @@ async def report_domain(request: ReportRequest) -> dict:
 class CopilotRequest(BaseModel):
     prompt: str
     scan_context: Optional[dict] = None
+
+@router.get("/copilot")
+async def copilot_chat_get(prompt: Optional[str] = None) -> dict:
+    """GET route handler for /copilot."""
+    if not prompt:
+        return {"status": "online", "endpoint": "/copilot", "usage": "POST JSON body {'prompt': 'Why is this site dangerous?'}"}
+    request = CopilotRequest(prompt=prompt)
+    return await copilot_chat(request)
 
 def query_fallback_kb(prompt: str, context: Optional[dict]) -> str:
     prompt_lower = prompt.lower()

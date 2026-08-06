@@ -4,7 +4,7 @@ import axios from 'axios';
 import { PieChart, Pie, Cell, Tooltip, Legend } from 'recharts';
 import './App.css';
 
-const API_URL = process.env.REACT_APP_API_URL || 'https://zerion-ai-security.onrender.com';
+const API_URL = process.env.REACT_APP_API_URL || 'https://zerion-ai-security-api.onrender.com';
 
 function App() {
   const [stats, setStats] = useState(null);

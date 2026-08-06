@@ -1,5 +1,5 @@
 // --- background.js ---
-const API_URL = 'https://zerion-ai-security.onrender.com';
+const API_URL = 'https://zerion-ai-security-api.onrender.com';
 const ZERION_API_KEY = 'zerion_secret_key_v2';
 
 // ==========================================
