@@ -1,5 +1,7 @@
+from __future__ import annotations
 import json
 import collections
+from typing import Union
 from config.settings import settings
 from utils.logger import error_logger, app_logger, threat_logger
 from google import genai
@@ -22,7 +24,7 @@ class HybridScanner:
         self.cache_limit = 500
         self.cache: collections.OrderedDict[str, dict] = collections.OrderedDict()
 
-    async def scan(self, url: str, intel_data: dict, domain_details: dict | int) -> dict:
+    async def scan(self, url: str, intel_data: dict, domain_details: Union[dict, int]) -> dict:
         """
         Analyzes the target URL using Groq Llama or Google Gemini, returning a structured JSON response.
         Optimized via in-memory caching to avoid redundant API transactions.
