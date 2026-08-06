@@ -57,9 +57,13 @@ class SecurityMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next) -> Response:
         client_ip = request.client.host if request.client else "unknown"
         
-        # 1. Skip checks for Root endpoint, health status, and Trusted Cache
-        if request.url.path in ["/", "/health", "/trusted-domains"]:
-            return await call_next(request)
+        # 1. Skip checks for OPTIONS preflight, Root endpoint, health status, and Trusted Cache
+        if request.method == "OPTIONS" or request.url.path in ["/", "/health", "/trusted-domains"]:
+            response: Response = await call_next(request)
+            response.headers["Access-Control-Allow-Origin"] = "*"
+            response.headers["Access-Control-Allow-Methods"] = "*"
+            response.headers["Access-Control-Allow-Headers"] = "*"
+            return response
             
         # 2. Rate Limiting Check
         if not rate_limiter.is_allowed(client_ip):
@@ -85,10 +89,10 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         response: Response = await call_next(request)
 
         # 5. Apply Secure Headers (Helmet equivalent)
+        response.headers["Access-Control-Allow-Origin"] = "*"
         response.headers["X-Content-Type-Options"] = "nosniff"
-        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-Frame-Options"] = "ALLOWALL"
         response.headers["X-XSS-Protection"] = "1; mode=block"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-        response.headers["Content-Security-Policy"] = "default-src 'self'; frame-ancestors 'none';"
         
         return response
