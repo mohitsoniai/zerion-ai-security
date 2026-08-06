@@ -1,3 +1,4 @@
+from __future__ import annotations
 import httpx
 import asyncio
 from utils.logger import app_logger, error_logger

@@ -1,4 +1,5 @@
-from typing import Optional
+from __future__ import annotations
+from typing import Optional, Union
 from fastapi import APIRouter, BackgroundTasks, HTTPException
 from pydantic import BaseModel
 import asyncio
