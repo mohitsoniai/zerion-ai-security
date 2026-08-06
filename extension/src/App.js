@@ -4,18 +4,20 @@ import axios from 'axios';
 import { PieChart, Pie, Cell, Tooltip, Legend } from 'recharts';
 import './App.css';
 
+const API_URL = process.env.REACT_APP_API_URL || 'https://zerion-ai-security.onrender.com';
+
 function App() {
   const [stats, setStats] = useState(null);
   const [recentScans, setRecentScans] = useState([]);
 
   useEffect(() => {
     axios
-      .get('http://127.0.0.1:8000/dashboard/stats')
+      .get(`${API_URL}/dashboard/stats`)
       .then((res) => setStats(res.data))
       .catch((err) => console.error('Error fetching stats:', err));
 
     axios
-      .get('http://127.0.0.1:8000/dashboard/recent')
+      .get(`${API_URL}/dashboard/recent`)
       .then((res) => setRecentScans(res.data))
       .catch((err) => console.error('Error fetching recent:', err));
   }, []);

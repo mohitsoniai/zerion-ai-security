@@ -1,5 +1,5 @@
 // dashboard.js - Handles Zerion Command Center Interactions
-const API_URL = 'http://localhost:7860';
+const API_URL = 'https://zerion-ai-security.onrender.com';
 let fullScanHistory = [];
 let activeTimeline = 'weekly';
 

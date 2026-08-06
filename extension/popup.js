@@ -1,5 +1,5 @@
 // popup.js - Handles Zerion UI Interactions
-const API_URL = 'http://localhost:7860';
+const API_URL = 'https://zerion-ai-security.onrender.com';
 const ZERION_API_KEY = 'zerion_secret_key_v2';
 let activeScanData = null;
 
