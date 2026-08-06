@@ -35,7 +35,7 @@ class StructuredLogger:
         self.logger.error(json.dumps(log_data))
 
 # Structured Loggers divided by system scope
-request_logger = StructuredLogger("WadeRequest")
-error_logger = StructuredLogger("WadeError")
-threat_logger = StructuredLogger("WadeThreat")
-app_logger = StructuredLogger("WadeApp")
+request_logger = StructuredLogger("ZerionRequest")
+error_logger = StructuredLogger("ZerionError")
+threat_logger = StructuredLogger("ZerionThreat")
+app_logger = StructuredLogger("ZerionApp")

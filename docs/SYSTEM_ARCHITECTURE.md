@@ -1,6 +1,6 @@
-# WADE AI v2 - System Architecture
+# Zerion AI v2 - System Architecture
 
-WADE (Web AI Defense Engine) is designed as a modular, service-oriented browser security platform that provides real-time protection against phishing, script-based attacks (XSS), and social engineering threats. It integrates browser-native sensors with dual large language model (LLM) reasoning and structured reputation intelligence.
+Zerion AI (AI-Powered Browser Security Platform) is designed as a modular, service-oriented browser security platform that provides real-time protection against phishing, script-based attacks (XSS), and social engineering threats. It integrates browser-native sensors with dual large language model (LLM) reasoning and structured reputation intelligence.
 
 ---
 
@@ -10,8 +10,8 @@ The platform is structured into three primary architectural tiers:
 
 ```mermaid
 graph TD
-    User([User Browser]) <--> Ext[WADE Chrome Extension]
-    Ext <--> BE[WADE FastAPI Backend]
+    User([User Browser]) <--> Ext[Zerion AI Chrome Extension]
+    Ext <--> BE[Zerion AI FastAPI Backend]
     
     subgraph Browser Sandbox (The Eyes)
         Ext --> CS[Content Scripts - DOM Scanner]

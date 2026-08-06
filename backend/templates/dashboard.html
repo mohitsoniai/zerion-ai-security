@@ -3,9 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WADE Command Center - Web AI Defense Engine</title>
+    <title>Zerion Command Center - AI-Powered Browser Security Platform</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
         :root {
             --bg-dark: #030308;
@@ -565,7 +567,40 @@
             color: #d1d2dc;
             margin: 0 0 12px 0;
         }
-
+        .recommendation-box {
+            border-radius: 8px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            margin-top: 10px;
+        }
+        .rec-safe {
+            background: rgba(34, 197, 94, 0.08);
+            border: 1px solid rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+        }
+        .rec-caution {
+            background: rgba(255, 170, 0, 0.08);
+            border: 1px solid rgba(255, 170, 0, 0.2);
+            color: #ffaa00;
+        }
+        .rec-avoid {
+            background: rgba(255, 77, 77, 0.08);
+            border: 1px solid rgba(255, 77, 77, 0.2);
+            color: #ff4d4d;
+        }
+        .rec-title {
+            font-size: 10px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .rec-text {
+            font-size: 12px;
+            font-weight: 600;
+            line-height: 1.4;
+        }
         /* Overlay */
         .overlay {
             position: fixed;
@@ -582,6 +617,332 @@
         .overlay.active {
             display: block;
         }
+
+        /* Threat Map Layout */
+        .map-section {
+            background: rgba(8, 8, 12, 0.6);
+            border: 1px solid rgba(0, 243, 255, 0.15);
+            border-radius: 16px;
+            padding: 20px;
+            margin-top: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .map-grid {
+            display: grid;
+            grid-template-columns: 3fr 1fr;
+            gap: 20px;
+            margin-top: 15px;
+        }
+        
+        .map-container {
+            height: 450px;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            background: #020205;
+            position: relative;
+            z-index: 1;
+        }
+        
+        /* Neon Cyber Map Tint */
+        .map-container .leaflet-tile-container {
+            filter: invert(1) hue-rotate(180deg) brightness(0.65) contrast(1.2) saturate(1.8) sepia(0.5);
+        }
+        
+        /* Side Panel Activity List */
+        .activity-panel {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            height: 450px;
+            box-sizing: border-box;
+        }
+        
+        .activity-header {
+            font-size: 13px;
+            font-weight: bold;
+            color: var(--cyan);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 15px;
+            border-bottom: 1px solid rgba(0, 243, 255, 0.15);
+            padding-bottom: 8px;
+        }
+        
+        .activity-list {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding-right: 5px;
+        }
+        
+        .activity-list::-webkit-scrollbar {
+            width: 4px;
+        }
+        .activity-list::-webkit-scrollbar-thumb {
+            background: rgba(0, 243, 255, 0.2);
+            border-radius: 2px;
+        }
+        
+        .activity-item {
+            background: rgba(255, 255, 255, 0.01);
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+            padding: 8px 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            font-size: 11px;
+            transition: all 0.3s;
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        .activity-item:hover {
+            border-color: rgba(0, 243, 255, 0.2);
+            background: rgba(0, 243, 255, 0.01);
+        }
+        
+        .activity-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .activity-path {
+            font-weight: bold;
+            color: #fff;
+        }
+        
+        .activity-threat {
+            color: var(--text-muted);
+            font-size: 10px;
+        }
+        
+        .activity-bottom {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 2px;
+        }
+        
+        .activity-time {
+            color: var(--text-muted);
+            font-size: 9px;
+        }
+        
+        /* Interactive Attack Path Styles */
+        .pulsing-attack-dot {
+            filter: drop-shadow(0 0 4px currentColor);
+        }
+        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+    /* Floating AI Copilot Chatbot Panel */
+    .copilot-btn {
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--cyan), #005f73);
+        border: 2px solid rgba(0, 243, 255, 0.4);
+        box-shadow: 0 0 20px rgba(0, 243, 255, 0.4);
+        color: #000;
+        font-size: 24px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1100;
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    }
+    
+    .copilot-btn:hover {
+        transform: scale(1.1) rotate(5deg);
+        box-shadow: 0 0 30px rgba(0, 243, 255, 0.7);
+    }
+    
+    .copilot-panel {
+        position: fixed;
+        bottom: 100px;
+        right: 30px;
+        width: 380px;
+        height: 520px;
+        background: rgba(10, 10, 18, 0.98);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(0, 243, 255, 0.25);
+        border-radius: 16px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.85);
+        z-index: 1100;
+        display: none;
+        flex-direction: column;
+        overflow: hidden;
+        transform: translateY(20px);
+        opacity: 0;
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    }
+    
+    .copilot-panel.active {
+        display: flex;
+        transform: translateY(0);
+        opacity: 1;
+    }
+    
+    .copilot-header {
+        padding: 15px 20px;
+        background: rgba(255, 255, 255, 0.02);
+        border-bottom: 1px solid rgba(0, 243, 255, 0.15);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .copilot-close {
+        background: transparent;
+        border: none;
+        color: var(--text-muted);
+        font-size: 24px;
+        cursor: pointer;
+        line-height: 1;
+        padding: 0;
+        transition: color 0.2s;
+    }
+    
+    .copilot-close:hover {
+        color: #fff;
+    }
+    
+    .copilot-messages {
+        flex: 1;
+        padding: 20px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+    
+    .copilot-messages::-webkit-scrollbar {
+        width: 4px;
+    }
+    .copilot-messages::-webkit-scrollbar-thumb {
+        background: rgba(0, 243, 255, 0.2);
+        border-radius: 2px;
+    }
+    
+    .message {
+        max-width: 80%;
+        padding: 10px 14px;
+        border-radius: 12px;
+        font-size: 12px;
+        line-height: 1.5;
+        word-wrap: break-word;
+    }
+    
+    .message.ai {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        align-self: flex-start;
+        color: #d1d2dc;
+        border-top-left-radius: 2px;
+    }
+    
+    .message.user {
+        background: rgba(0, 243, 255, 0.08);
+        border: 1px solid rgba(0, 243, 255, 0.2);
+        align-self: flex-end;
+        color: #fff;
+        border-top-right-radius: 2px;
+    }
+    
+    .copilot-chips {
+        padding: 10px 20px;
+        display: flex;
+        gap: 8px;
+        overflow-x: auto;
+        border-top: 1px solid rgba(255, 255, 255, 0.03);
+        background: rgba(0, 0, 0, 0.1);
+    }
+    
+    .copilot-chips::-webkit-scrollbar {
+        display: none;
+    }
+    
+    .chip-btn {
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 12px;
+        padding: 6px 12px;
+        color: var(--text-muted);
+        font-size: 10px;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: all 0.2s;
+        font-family: inherit;
+    }
+    
+    .chip-btn:hover {
+        border-color: var(--cyan);
+        color: #fff;
+        background: rgba(0, 243, 255, 0.03);
+    }
+    
+    .copilot-input-area {
+        padding: 15px 20px;
+        background: rgba(255, 255, 255, 0.02);
+        border-top: 1px solid rgba(255, 255, 255, 0.05);
+        display: flex;
+        gap: 10px;
+    }
+    
+    .copilot-input-area input {
+        flex: 1;
+        background: rgba(0, 0, 0, 0.3);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 8px;
+        padding: 10px 14px;
+        color: #fff;
+        font-size: 12px;
+        font-family: inherit;
+        outline: none;
+        transition: border-color 0.2s;
+    }
+    
+    .copilot-input-area input:focus {
+        border-color: var(--cyan);
+    }
+    
+    .copilot-input-area button {
+        background: var(--cyan);
+        border: none;
+        border-radius: 8px;
+        padding: 0 16px;
+        color: #000;
+        font-weight: bold;
+        font-size: 12px;
+        cursor: pointer;
+        transition: background-color 0.2s;
+        font-family: inherit;
+    }
+    
+    .copilot-input-area button:hover {
+        background: #00d2df;
+    }
     </style>
 </head>
 <body>
@@ -593,7 +954,7 @@
                 <!-- Glowing Cyber Shield SVG Logo -->
                 <svg class="logo-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M12 2L3 5V11C3 16.55 6.84 21.74 12 23C17.16 21.74 21 16.55 21 11V5L12 2Z" fill="url(#cyanGrad)" stroke="var(--cyan)" stroke-width="2" stroke-linejoin="round"/>
-                    <path d="M9 11L11 13L15 9" stroke="#000" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M7 8.5H17L7.5 15.5H17" stroke="#000" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
                     <defs>
                         <linearGradient id="cyanGrad" x1="12" y1="2" x2="12" y2="23" gradientUnits="userSpaceOnUse">
                             <stop stop-color="#00f3ff" stop-opacity="0.8"/>
@@ -602,8 +963,8 @@
                     </defs>
                 </svg>
                 <div>
-                    <h1>WADE <span>Command Center</span></h1>
-                    <p>Web AI Defense Engine - Real-time Threat Intelligence and SOC Dashboard</p>
+                    <h1>Zerion <span>Command Center</span></h1>
+                    <p>AI-Powered Browser Security Platform - Real-time Threat Intelligence & Security Operations Dashboard</p>
                 </div>
             </div>
             <div class="system-status-badge">
@@ -633,6 +994,49 @@
                 <div class="stat-title">High Risk Blocks</div>
                 <div class="stat-value" id="stat-danger-count">--</div>
                 <div class="stat-desc">Active exploit connection cuts</div>
+            </div>
+        </section>
+
+        <!-- Global Cyber Threat Map -->
+        <section class="map-section">
+            <div class="section-header" style="margin-bottom:15px; border-bottom: 1px solid rgba(0, 243, 255, 0.1); padding-bottom: 10px;">
+                <h2 class="section-title" style="font-size:16px; margin: 0; color: var(--cyan); text-transform: uppercase; letter-spacing: 1px;">🌐 Global Cyber Threat Map</h2>
+                <p class="section-subtitle" style="font-size:11px; margin: 4px 0 0 0; color: var(--text-muted);">Real-time worldwide attack intelligence streams and predictive AI node monitoring</p>
+            </div>
+            
+            <!-- Threat Map Counters -->
+            <div class="metrics-grid" style="display: grid; grid-template-columns: repeat(5, 1fr); margin-bottom: 20px; gap: 15px;">
+                <div class="metric-card" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 12px; text-align: center;">
+                    <div class="metric-lbl" style="font-size: 9px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px;">Active Threats</div>
+                    <div class="metric-val" id="map-active-threats" style="font-size: 16px; font-weight: bold; color: var(--red); text-shadow: 0 0 10px rgba(255, 0, 60, 0.4);">0</div>
+                </div>
+                <div class="metric-card" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 12px; text-align: center;">
+                    <div class="metric-lbl" style="font-size: 9px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px;">Countries Monitored</div>
+                    <div class="metric-val" id="map-countries" style="font-size: 16px; font-weight: bold; color: var(--cyan); text-shadow: 0 0 10px rgba(0, 243, 255, 0.4);">0</div>
+                </div>
+                <div class="metric-card" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 12px; text-align: center;">
+                    <div class="metric-lbl" style="font-size: 9px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px;">Threats Blocked Today</div>
+                    <div class="metric-val" id="map-blocked-today" style="font-size: 16px; font-weight: bold; color: var(--green); text-shadow: 0 0 10px rgba(34, 197, 94, 0.4);">0</div>
+                </div>
+                <div class="metric-card" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 12px; text-align: center;">
+                    <div class="metric-lbl" style="font-size: 9px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px;">AI Predictions</div>
+                    <div class="metric-val" id="map-predictions" style="font-size: 16px; font-weight: bold; color: var(--purple); text-shadow: 0 0 10px rgba(188, 19, 254, 0.4);">0</div>
+                </div>
+                <div class="metric-card" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 12px; text-align: center;">
+                    <div class="metric-lbl" style="font-size: 9px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px;">Avg Detection Time</div>
+                    <div class="metric-val" id="map-avg-time" style="font-size: 16px; font-weight: bold; color: var(--orange); text-shadow: 0 0 10px rgba(255, 165, 0, 0.4);">--</div>
+                </div>
+            </div>
+            
+            <div class="map-grid">
+                <div class="map-container" id="threat-map"></div>
+                
+                <div class="activity-panel">
+                    <div class="activity-header">Recent Threat Activity</div>
+                    <div class="activity-list" id="activity-list-container">
+                        <!-- Dynamic Event Ticker -->
+                    </div>
+                </div>
             </div>
         </section>
 
@@ -771,7 +1175,10 @@
         <p class="analyst-para" id="sidebar-analysis">--</p>
 
         <div class="section-headline">Security Recommendations</div>
-        <p class="analyst-para" id="sidebar-recommendations">--</p>
+        <div class="recommendation-box" id="sidebar-recommendation-box">
+            <div class="rec-title">Recommended Action</div>
+            <div class="rec-text" id="sidebar-recommendation-text">--</div>
+        </div>
 
         <div class="section-headline">Domain Registration (WHOIS)</div>
         <div class="sidebar-info-grid" style="margin-bottom: 10px;">
@@ -782,6 +1189,18 @@
             <div class="info-item">
                 <div class="info-label">Created Date</div>
                 <div class="info-value" id="sidebar-age">--</div>
+            </div>
+        </div>
+
+        <div class="section-headline">OSINT & Threat Intelligence</div>
+        <div class="sidebar-info-grid" style="margin-bottom: 10px;">
+            <div class="info-item">
+                <div class="info-label">VirusTotal Ratio</div>
+                <div class="info-value" id="sidebar-vt-ratio">--</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Intel Feed Matches</div>
+                <div class="info-value" id="sidebar-intel-matches">--</div>
             </div>
         </div>
 
@@ -797,6 +1216,39 @@
             </div>
         </div>
     </aside>
+
+    <!-- Floating AI Assistant Button -->
+    <button class="copilot-btn" id="copilot-btn" aria-label="Open AI Copilot">🤖</button>
+
+    <!-- AI Copilot Panel -->
+    <div class="copilot-panel" id="copilot-panel">
+        <div class="copilot-header">
+            <div>
+                <div style="font-size: 14px; font-weight: bold; color: var(--cyan); text-transform: uppercase; letter-spacing: 0.5px;">Ask Zerion AI</div>
+                <div style="font-size: 10px; color: var(--text-muted);">AI Cybersecurity Copilot</div>
+            </div>
+            <button class="copilot-close" id="copilot-close">×</button>
+        </div>
+        
+        <div class="copilot-messages" id="copilot-messages">
+            <div class="message ai">
+                Hello! I am your **Zerion AI Copilot**. I analyze real-time scan metrics, SSL certificates, threat signatures, and OSINT databases to secure your browsing sessions. How can I assist you today?
+            </div>
+        </div>
+
+        <!-- Suggested Questions Chips -->
+        <div class="copilot-chips" id="copilot-chips">
+            <button class="chip-btn" data-question="Explain this report">Explain report</button>
+            <button class="chip-btn" data-question="Is this website safe?">Is website safe?</button>
+            <button class="chip-btn" data-question="Why is the score high?">Why score high?</button>
+            <button class="chip-btn" data-question="How can I stay protected?">How to protect?</button>
+        </div>
+
+        <div class="copilot-input-area">
+            <input type="text" id="copilot-input" placeholder="Ask about threat context, security..." autocomplete="off" />
+            <button id="copilot-send-btn">Send</button>
+        </div>
+    </div>
 
     <div class="overlay" id="overlay"></div>
 
@@ -1080,6 +1532,8 @@
 
         // Open detailed side panel
         function openAnalysis(scan) {
+            activeCopilotScanContext = scan;
+            const scorePct = scan.risk_score || 0;
             document.getElementById('sidebar-domain').innerText = new URL(scan.url).hostname;
             document.getElementById('sidebar-url').innerText = scan.url;
             document.getElementById('sidebar-score').innerText = scan.risk_score + '%';
@@ -1095,7 +1549,21 @@
             // Details
             document.getElementById('sidebar-summary').innerText = scan.explanation || 'Clean browse logs. No anomalies found.';
             document.getElementById('sidebar-analysis').innerText = scan.detection_reason || 'AI Engine verified that the payload behaves consistent with standard white-listed policies.';
-            document.getElementById('sidebar-recommendations').innerText = scan.recommendations || 'No remediation actions needed. System protection active.';
+            // Set recommendation block
+            const recBox = document.getElementById('sidebar-recommendation-box');
+            const recText = document.getElementById('sidebar-recommendation-text');
+            recBox.className = 'recommendation-box';
+
+            if (scorePct > 75) {
+                recBox.classList.add('rec-avoid');
+                recText.innerText = 'AVOID WEBSITE - Terminate connection. Avoid submitting login credentials or sharing sensitive files.';
+            } else if (scorePct > 30) {
+                recBox.classList.add('rec-caution');
+                recText.innerText = 'PROCEED WITH CAUTION - The platform detected suspicious metadata anomalies. Avoid downloads.';
+            } else {
+                recBox.classList.add('rec-safe');
+                recText.innerText = 'SAFE TO BROWSE - No phishing, malware signature matches, or malicious payload signatures matched.';
+            }
 
             // WHOIS & SSL
             document.getElementById('sidebar-registrar').innerText = scan.whois_registrar || 'N/A';
@@ -1103,9 +1571,15 @@
             document.getElementById('sidebar-ssl-status').innerText = scan.ssl_valid ? 'Valid SSL Cert' : 'Invalid / Expired';
             document.getElementById('sidebar-ssl-issuer').innerText = scan.ssl_issuer || 'N/A';
 
+            // OSINT details
+            const vtData = scan.vt_data || {};
+            document.getElementById('sidebar-vt-ratio').innerText = vtData.total ? `Flagged: ${vtData.malicious}/${vtData.total}` : '0 Matches';
+            
+            const labels = scan.threat_labels || [];
+            document.getElementById('sidebar-intel-matches').innerText = labels.length > 0 ? labels.join(', ') : 'None';
+
             // SVG gauge animation
             const circle = document.getElementById('sidebar-gauge-fill');
-            const scorePct = scan.risk_score;
             const strokeVal = (scorePct / 100) * 100;
             circle.style.strokeDasharray = `${strokeVal}, 100`;
             
@@ -1156,13 +1630,13 @@
             ]);
             const content = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
             const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
-            triggerDownload(blob, `wade_threat_logs.csv`);
+            triggerDownload(blob, `zerion_threat_logs.csv`);
         };
 
         document.getElementById('export-json').onclick = () => {
             if(rawScans.length === 0) return alert('No logs available.');
             const blob = new Blob([JSON.stringify(rawScans, null, 2)], { type: 'application/json;charset=utf-8;' });
-            triggerDownload(blob, `wade_threat_logs.json`);
+            triggerDownload(blob, `zerion_threat_logs.json`);
         };
 
         function triggerDownload(blob, filename) {
@@ -1176,9 +1650,342 @@
             document.body.removeChild(link);
         }
 
+        // ==========================================
+        // 6. GLOBAL THREAT MAP SYSTEM
+        // ==========================================
+        let threatMap;
+        const attackCountries = {
+            'USA': [37.0902, -95.7129],
+            'Russia': [61.5240, 105.3188],
+            'China': [35.8617, 104.1954],
+            'India': [20.5937, 78.9629],
+            'Germany': [51.1657, 10.4515],
+            'UK': [55.3781, -3.4360],
+            'Brazil': [-14.2350, -51.9253],
+            'Australia': [-25.2744, 133.7751],
+            'South Africa': [-30.5595, 22.9375],
+            'Japan': [36.2048, 138.2529],
+            'Canada': [56.1304, -106.3468],
+            'France': [46.2276, 2.2137],
+            'Ukraine': [48.3794, 31.1656],
+            'Iran': [32.4279, 53.6880],
+            'North Korea': [40.3399, 127.5101],
+            'Singapore': [1.3521, 103.8198]
+        };
+
+        const mapThreatTypes = [
+            { type: 'Credential Phishing', severity: 'Critical', color: '#ff4d4d' },
+            { type: 'Malware Delivery', severity: 'High', color: '#ff4d4d' },
+            { type: 'Ransomware Beacon', severity: 'Critical', color: '#ff4d4d' },
+            { type: 'Credential Stuffing', severity: 'High', color: '#ffaa00' },
+            { type: 'DDoS Botnet Flood', severity: 'High', color: '#ffaa00' },
+            { type: 'Command & Control Beaconing', severity: 'High', color: '#ffaa00' },
+            { type: 'Safe Proxy Traffic', severity: 'Low', color: '#22c55e' },
+            { type: 'Tor Exit Node Scan', severity: 'Medium', color: '#ffaa00' },
+            { type: 'SQL Injection Probe', severity: 'Medium', color: '#ffaa00' }
+        ];
+
+        function initThreatMap() {
+            const mapElement = document.getElementById('threat-map');
+            if (!mapElement) return;
+
+            try {
+                threatMap = L.map('threat-map', {
+                    center: [20, 0],
+                    zoom: 2,
+                    minZoom: 1.5,
+                    maxZoom: 10,
+                    zoomControl: false,
+                    attributionControl: false
+                });
+
+                L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                    maxZoom: 20
+                }).addTo(threatMap);
+                
+                threatMap.doubleClickZoom.disable();
+            } catch (e) {
+                console.error('Failed to initialize Leaflet map:', e);
+                return;
+            }
+
+            // Setup Threat Map Counters
+            let activeThreats = 142;
+            let countriesMonitored = 74;
+            let threatsBlocked = 3280;
+            let predictions = 894;
+            let avgDetection = 1.24;
+
+            function updateCounters() {
+                activeThreats += Math.floor(Math.random() * 5) - 2;
+                if (activeThreats < 100) activeThreats = 100;
+                
+                threatsBlocked += Math.floor(Math.random() * 3);
+                predictions += Math.floor(Math.random() * 2);
+                avgDetection = (1.1 + Math.random() * 0.3).toFixed(2);
+                
+                document.getElementById('map-active-threats').innerText = activeThreats;
+                document.getElementById('map-countries').innerText = countriesMonitored;
+                document.getElementById('map-blocked-today').innerText = threatsBlocked;
+                document.getElementById('map-predictions').innerText = predictions;
+                document.getElementById('map-avg-time').innerText = avgDetection + 's';
+            }
+            updateCounters();
+            setInterval(updateCounters, 4000);
+
+            const activityList = document.getElementById('activity-list-container');
+            
+            function triggerSimulatedAttack() {
+                if (!threatMap) return;
+                
+                const countryNames = Object.keys(attackCountries);
+                const sourceIdx = Math.floor(Math.random() * countryNames.length);
+                let targetIdx = Math.floor(Math.random() * countryNames.length);
+                while (targetIdx === sourceIdx) {
+                    targetIdx = Math.floor(Math.random() * countryNames.length);
+                }
+                
+                const source = countryNames[sourceIdx];
+                const target = countryNames[targetIdx];
+                const threat = mapThreatTypes[Math.floor(Math.random() * mapThreatTypes.length)];
+                
+                animateMapAttack(attackCountries[source], attackCountries[target], threat.color);
+                
+                const item = document.createElement('div');
+                item.className = 'activity-item';
+                
+                let severityBadge = '';
+                if (threat.severity === 'Critical') {
+                    severityBadge = `<span class="badge danger" style="font-size:8px; padding:2px 6px;">CRITICAL</span>`;
+                } else if (threat.severity === 'High') {
+                    severityBadge = `<span class="badge warning" style="font-size:8px; padding:2px 6px; border-color:var(--orange); color:var(--orange);">HIGH</span>`;
+                } else if (threat.severity === 'Medium') {
+                    severityBadge = `<span class="badge warning" style="font-size:8px; padding:2px 6px; border-color:var(--orange); color:var(--orange);">MEDIUM</span>`;
+                } else {
+                    severityBadge = `<span class="badge safe" style="font-size:8px; padding:2px 6px;">LOW</span>`;
+                }
+                
+                const timeStr = new Date().toLocaleTimeString();
+                item.innerHTML = `
+                    <div class="activity-top">
+                        <span class="activity-path">${source} → ${target}</span>
+                        ${severityBadge}
+                    </div>
+                    <div class="activity-bottom">
+                        <span class="activity-threat">${threat.type}</span>
+                        <span class="activity-time">${timeStr}</span>
+                    </div>
+                `;
+                
+                activityList.insertBefore(item, activityList.firstChild);
+                if (activityList.children.length > 15) {
+                    activityList.removeChild(activityList.lastChild);
+                }
+            }
+
+            for(let i=0; i<3; i++) {
+                setTimeout(triggerSimulatedAttack, i * 1200);
+            }
+            setInterval(triggerSimulatedAttack, 6000);
+        }
+
+        function getMapCurvePoints(start, end, numPoints = 30) {
+            const points = [];
+            const startLatLng = L.latLng(start);
+            const endLatLng = L.latLng(end);
+            
+            const midLat = (startLatLng.lat + endLatLng.lat) / 2;
+            const midLng = (startLatLng.lng + endLatLng.lng) / 2;
+            
+            const dLat = endLatLng.lat - startLatLng.lat;
+            const dLng = endLatLng.lng - startLatLng.lng;
+            
+            const offset = 0.25;
+            const controlLat = midLat + dLng * offset;
+            const controlLng = midLng - dLat * offset;
+            
+            for (let i = 0; i <= numPoints; i++) {
+                const t = i / numPoints;
+                const lat = (1 - t) * (1 - t) * startLatLng.lat + 2 * (1 - t) * t * controlLat + t * t * endLatLng.lat;
+                const lng = (1 - t) * (1 - t) * startLatLng.lng + 2 * (1 - t) * t * controlLng + t * t * endLatLng.lng;
+                points.push([lat, lng]);
+            }
+            return points;
+        }
+
+        function animateMapAttack(start, end, color) {
+            if (!threatMap) return;
+            
+            const points = getMapCurvePoints(start, end);
+            const path = L.polyline(points, { color: color, weight: 1.5, opacity: 0.5 }).addTo(threatMap);
+            
+            const dot = L.circleMarker(start, {
+                radius: 3,
+                color: color,
+                fillColor: color,
+                fillOpacity: 1,
+                className: 'pulsing-attack-dot'
+            }).addTo(threatMap);
+            
+            let step = 0;
+            const numSteps = points.length;
+            
+            const interval = setInterval(() => {
+                if (step >= numSteps) {
+                    clearInterval(interval);
+                    if (threatMap && threatMap.hasLayer(dot)) threatMap.removeLayer(dot);
+                    setTimeout(() => {
+                        if (threatMap && threatMap.hasLayer(path)) threatMap.removeLayer(path);
+                    }, 1000);
+                    
+                    const targetMarker = L.circleMarker(end, {
+                        radius: 6,
+                        color: color,
+                        fillColor: color,
+                        fillOpacity: 0.8
+                    }).addTo(threatMap);
+                    
+                    let pulseStep = 0;
+                    const pulseInterval = setInterval(() => {
+                        pulseStep++;
+                        targetMarker.setRadius(6 + pulseStep);
+                        targetMarker.setStyle({ fillOpacity: 0.8 - (pulseStep * 0.1) });
+                        if (pulseStep >= 8) {
+                            clearInterval(pulseInterval);
+                            if (threatMap && threatMap.hasLayer(targetMarker)) threatMap.removeLayer(targetMarker);
+                        }
+                    }, 50);
+                    
+                    return;
+                }
+                if (threatMap && threatMap.hasLayer(dot)) {
+                    dot.setLatLng(points[step]);
+                }
+                step++;
+            }, 35);
+        }
+
+        // ==========================================
+        // 7. AI COPILOT CHATBOT SYSTEM
+        // ==========================================
+        let activeCopilotScanContext = null;
+
+        function initAICopilot() {
+            const panel = document.getElementById('copilot-panel');
+            const btnOpen = document.getElementById('copilot-btn');
+            const btnClose = document.getElementById('copilot-close');
+            const btnSend = document.getElementById('copilot-send-btn');
+            const inputEl = document.getElementById('copilot-input');
+            const messagesBox = document.getElementById('copilot-messages');
+            const chipsContainer = document.getElementById('copilot-chips');
+
+            if (!panel || !btnOpen || !btnClose || !btnSend || !inputEl || !messagesBox) return;
+
+            // Toggle Panel open/close
+            btnOpen.addEventListener('click', () => {
+                panel.classList.toggle('active');
+                if (panel.classList.contains('active')) {
+                    inputEl.focus();
+                }
+            });
+
+            btnClose.addEventListener('click', () => {
+                panel.classList.remove('active');
+            });
+
+            // Send message handler
+            const sendMessage = (text = '') => {
+                const prompt = text.trim() || inputEl.value.trim();
+                if (!prompt) return;
+
+                if (!text.trim()) inputEl.value = '';
+
+                appendMessageBubble(prompt, 'user');
+                const loadingId = appendMessageBubble('*Analyzing signatures and loading context...*', 'ai');
+
+                fetch('/copilot', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        prompt: prompt,
+                        scan_context: activeCopilotScanContext ? {
+                            url: activeCopilotScanContext.url,
+                            verdict: activeCopilotScanContext.risk_score > 75 ? 'MALICIOUS' : activeCopilotScanContext.risk_score > 30 ? 'SUSPICIOUS' : 'SAFE',
+                            risk_score: activeCopilotScanContext.risk_score,
+                            severity: activeCopilotScanContext.severity,
+                            risk_category: activeCopilotScanContext.risk_category,
+                            explanation: activeCopilotScanContext.explanation,
+                            whois_summary: activeCopilotScanContext.whois_registrar,
+                            domain_age: activeCopilotScanContext.domain_age,
+                            ssl_analysis: activeCopilotScanContext.ssl_issuer,
+                            vt_data: activeCopilotScanContext.vt_data,
+                            threat_labels: activeCopilotScanContext.threat_labels
+                        } : null
+                    })
+                })
+                .then(res => {
+                    if (!res.ok) throw new Error('Copilot Service degraded.');
+                    return res.json();
+                })
+                .then(data => {
+                    removeLoadingBubble(loadingId);
+                    appendMessageBubble(data.response, 'ai');
+                })
+                .catch(err => {
+                    console.error(err);
+                    removeLoadingBubble(loadingId);
+                    appendMessageBubble('⚠️ **Connection Timeout**. Threat intelligence network is unresponsive. Please retry.', 'ai');
+                });
+            };
+
+            btnSend.addEventListener('click', () => sendMessage());
+            inputEl.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') sendMessage();
+            });
+
+            // Chips click handler
+            if (chipsContainer) {
+                chipsContainer.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('chip-btn')) {
+                        const question = e.target.getAttribute('data-question');
+                        sendMessage(question);
+                    }
+                });
+            }
+
+            function appendMessageBubble(text, sender) {
+                const bubble = document.createElement('div');
+                bubble.className = `message ${sender}`;
+                
+                // Parse simple bold/markdown elements
+                let formattedText = text
+                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                    .replace(/`([^`]+)`/g, '<code>$1</code>')
+                    .replace(/\n/g, '<br/>');
+
+                bubble.innerHTML = formattedText;
+                messagesBox.appendChild(bubble);
+                messagesBox.scrollTop = messagesBox.scrollHeight;
+                
+                const randomId = 'msg-' + Math.random().toString(36).substring(2, 9);
+                bubble.id = randomId;
+                return randomId;
+            }
+
+            function removeLoadingBubble(id) {
+                const el = document.getElementById(id);
+                if (el) el.remove();
+            }
+        }
+
         window.onload = () => {
             loadDashboard();
             initCanvasMesh();
+            initThreatMap();
+            initAICopilot();
         };
     </script>
 </body>

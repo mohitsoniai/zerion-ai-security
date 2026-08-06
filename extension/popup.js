@@ -1,6 +1,7 @@
-// popup.js - Handles WADE UI Interactions
+// popup.js - Handles Zerion UI Interactions
 const API_URL = 'http://localhost:7860';
-const WADE_API_KEY = 'wade_secret_key_v2';
+const ZERION_API_KEY = 'zerion_secret_key_v2';
+let activeScanData = null;
 
 document.addEventListener('DOMContentLoaded', () => {
   // 1. Initialize Tabs
@@ -37,6 +38,26 @@ document.addEventListener('DOMContentLoaded', () => {
           document.body.classList.add('light-mode');
         }
       });
+    });
+  }
+
+  // Security Report Drawer Listeners
+  const reportDrawer = document.getElementById('report-drawer');
+  const viewReportBtn = document.getElementById('view-report-btn');
+  const closeReportBtn = document.getElementById('close-report-btn');
+
+  if (viewReportBtn && reportDrawer) {
+    viewReportBtn.addEventListener('click', () => {
+      if (activeScanData) {
+        populateReportDrawer(activeScanData);
+        reportDrawer.classList.add('open');
+      }
+    });
+  }
+
+  if (closeReportBtn && reportDrawer) {
+    closeReportBtn.addEventListener('click', () => {
+      reportDrawer.classList.remove('open');
     });
   }
 
@@ -97,7 +118,7 @@ document.addEventListener('DOMContentLoaded', () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-WADE-API-KEY': WADE_API_KEY
+          'X-ZERION-API-KEY': ZERION_API_KEY
         },
         body: JSON.stringify({ domain: domain, report_type: type, comment: comment })
       })
@@ -264,10 +285,81 @@ function updateDashboard(data) {
   const domain = data.target_domain || (data.url ? new URL(data.url).hostname : 'unknown');
   document.getElementById('domain-name').innerText = domain;
   document.getElementById('domain-name').style.color = color;
-  document.getElementById('domain-age').innerText = data.domain_age > 0 ? `${data.domain_age} Days` : 'New Domain';
+  document.getElementById('domain-age').innerText = data.domain_age > 0 ? `${data.domain_age} Days` : (data.domain_age === 0 ? 'New Domain' : 'Age Unknown');
 
   const vtDisplay = data.vt_verdict || (data.vt_data ? `Flagged: ${data.vt_data.malicious}/${data.vt_data.total}` : '0 Matches');
   document.getElementById('vt-data').innerText = vtDisplay;
+
+  // Store raw scan payload and reveal the View Report button
+  activeScanData = data;
+  const viewReportBtn = document.getElementById('view-report-btn');
+  if (viewReportBtn) {
+    viewReportBtn.style.display = 'block';
+  }
+}
+
+function populateReportDrawer(data) {
+  const url = data.url || (data.target_domain ? 'https://' + data.target_domain : 'Unknown URL');
+  document.getElementById('rep-url').innerText = url;
+  
+  const score = data.risk_score !== undefined ? data.risk_score : 0;
+  document.getElementById('rep-score').innerText = `${score} / 100`;
+
+  let verdict = data.verdict || (score > 75 ? 'MALICIOUS' : score > 30 ? 'SUSPICIOUS' : 'SAFE');
+  const verdictEl = document.getElementById('rep-verdict');
+  verdictEl.innerText = verdict;
+  
+  // Style verdict coloring
+  if (score > 75) {
+    verdictEl.style.color = 'var(--red)';
+    verdictEl.style.textShadow = '0 0 8px rgba(255, 77, 77, 0.4)';
+  } else if (score > 30) {
+    verdictEl.style.color = 'var(--orange)';
+    verdictEl.style.textShadow = '0 0 8px rgba(255, 170, 0, 0.4)';
+  } else {
+    verdictEl.style.color = 'var(--green)';
+    verdictEl.style.textShadow = '0 0 8px rgba(34, 197, 94, 0.4)';
+  }
+
+  const confidence = data.confidence_score !== undefined ? data.confidence_score : (score > 0 ? score : 90);
+  document.getElementById('rep-confidence').innerText = `${confidence}%`;
+
+  const category = data.risk_category || data.threat_category || 'Safe';
+  document.getElementById('rep-category').innerText = category;
+
+  const ssl = data.ssl_analysis || 'Unknown';
+  document.getElementById('rep-ssl').innerText = ssl;
+
+  const age = data.domain_age;
+  document.getElementById('rep-age').innerText = age > 0 ? `${age} Days` : (age === 0 ? 'New Domain' : 'Age Unknown');
+
+  const vt = data.vt_data ? `Flagged: ${data.vt_data.malicious} / ${data.vt_data.total}` : '0 Matches';
+  document.getElementById('rep-vt').innerText = vt;
+
+  const intel = (data.threat_labels && data.threat_labels.length > 0) ? data.threat_labels.join(', ') : 'None';
+  document.getElementById('rep-intel').innerText = intel;
+
+  const whois = data.whois_summary || 'Unknown';
+  document.getElementById('rep-whois').innerText = whois;
+
+  const explanation = data.explanation || 'Clean browse logs. No threat anomalies identified.';
+  document.getElementById('rep-analysis').innerText = explanation;
+
+  // Set recommendation block
+  const recBox = document.getElementById('rep-recommendation');
+  const recText = document.getElementById('rep-rec-text');
+  recBox.className = 'recommendation-box';
+
+  if (score > 75) {
+    recBox.classList.add('rec-avoid');
+    recText.innerText = 'AVOID WEBSITE - Terminate connection. Avoid submitting login credentials or sharing sensitive files.';
+  } else if (score > 30) {
+    recBox.classList.add('rec-caution');
+    recText.innerText = 'PROCEED WITH CAUTION - The platform detected suspicious metadata anomalies. Avoid downloads.';
+  } else {
+    recBox.classList.add('rec-safe');
+    recText.innerText = 'SAFE TO BROWSE - No phishing, malware signature matches, or malicious payload signatures matched.';
+  }
 }
 
 function loadHistory() {

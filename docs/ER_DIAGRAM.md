@@ -1,4 +1,4 @@
-# WADE AI v2 - Entity Relationship Diagram
+# Zerion AI v2 - Entity Relationship Diagram
 
 This document describes the schema structure of the local SQLite database which tracks threat audit history and keeps operational caches.
 

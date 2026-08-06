@@ -1,4 +1,5 @@
 import os
+import secrets
 from pydantic import BaseModel
 
 class Settings(BaseModel):
@@ -14,13 +15,14 @@ class Settings(BaseModel):
     google_safe_browsing_key: str | None = os.getenv("GOOGLE_SAFE_BROWSING_API_KEY")
     abuseipdb_key: str | None = os.getenv("ABUSEIPDB_API_KEY")
     
-    # Authentication Secrets
-    wade_api_key: str = os.getenv("WADE_API_KEY", "wade_secret_key_v2")
-    jwt_secret: str = os.getenv("JWT_SECRET", "super_secret_jwt_key_wade_v2")
+    # Authentication Secrets — MUST be set via environment variables in production
+    # WARNING: Fallback values below are development-only; never deploy without overrides
+    zerion_api_key: str = os.getenv("ZERION_API_KEY", "zerion_secret_key_v2")
+    jwt_secret: str = os.getenv("JWT_SECRET", "super_secret_jwt_key_zerion_v2")
     jwt_algorithm: str = os.getenv("JWT_ALGORITHM", "HS256")
     
     # Database Settings
-    db_path: str = os.getenv("DB_PATH", "wade_logs.db")
+    db_path: str = os.getenv("DB_PATH", "zerion_logs.db")
     
     # Rate Limiting Parameters (Token Bucket Algorithm)
     rate_limit_burst: int = int(os.getenv("RATE_LIMIT_BURST", "30"))

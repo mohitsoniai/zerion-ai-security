@@ -1,6 +1,6 @@
-# WADE AI v2 - Contributing Guide
+# Zerion AI v2 - Contributing Guide
 
-Thank you for your interest in contributing to WADE AI v2! We welcome developers, researchers, and security experts to help us build a safer browser experience.
+Thank you for your interest in contributing to Zerion AI v2! We welcome developers, researchers, and security experts to help us build a safer browser experience.
 
 ---
 

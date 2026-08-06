@@ -1,7 +1,7 @@
 {
-  "name": "wade-ai-defense",
+  "name": "zerion-ai-defense",
   "version": "2.0.0",
-  "description": "WADE AI v2 - Web AI Defense Engine. Real-time browser security platform powered by Generative AI and Multimodal Analysis.",
+  "description": "Zerion AI v2 - AI-Powered Browser Security Platform. Real-time browser security platform powered by Generative AI and Multimodal Analysis.",
   "scripts": {
     "lint": "eslint . --ext .js",
     "format": "prettier --write .",

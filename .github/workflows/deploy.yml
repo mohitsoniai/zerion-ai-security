@@ -16,7 +16,7 @@ jobs:
       - name: Setup Node.js Environment
         uses: actions/setup-node@v3
         with:
-          node-size: '16'
+          node-version: '16'
           cache: 'npm'
 
       - name: Install Linting Tooling
@@ -53,3 +53,4 @@ jobs:
           tags: wade-api:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          # Zerion AI — Production Docker build

@@ -1,6 +1,6 @@
-# WADE AI v2 - Deployment Guide
+# Zerion AI v2 - Deployment Guide
 
-This guide describes how to run WADE AI v2 locally for development and deploy it to cloud platforms like Hugging Face Spaces.
+This guide describes how to run Zerion AI v2 locally for development and deploy it to cloud platforms like Hugging Face Spaces.
 
 ---
 
@@ -17,8 +17,8 @@ This guide describes how to run WADE AI v2 locally for development and deploy it
 ### Step 1: Clone the Repository
 
 ```bash
-git clone https://github.com/mohitsoniai/WADE-AI-extension.git
-cd WADE-AI-Defense
+git clone https://github.com/mohitsoniai/Zerion AI-AI-extension.git
+cd Zerion AI-AI-Defense
 ```
 
 ---
@@ -55,7 +55,7 @@ cd WADE-AI-Defense
    python -m uvicorn backend.app:app --host 127.0.0.1 --port 7860 --reload
    ```
 4. Verify by opening `http://127.0.0.1:7860/` in your browser. You should see:
-   `🛡️ WADE ENGINE ACTIVE`
+   `🛡️ Zerion AI ENGINE ACTIVE`
 
 ---
 
@@ -70,23 +70,23 @@ cd WADE-AI-Defense
    ```javascript
    const API_URL = 'http://127.0.0.1:7860';
    ```
-   Save the file, then click the **Reload** icon on the Chrome Extensions card for WADE.
+   Save the file, then click the **Reload** icon on the Chrome Extensions card for Zerion AI.
 
 ---
 
 ## 🐳 Running with Docker
 
-WADE includes a production-ready `Dockerfile` within the backend. To build and run the container locally:
+Zerion AI includes a production-ready `Dockerfile` within the backend. To build and run the container locally:
 
 ```bash
 # Build the Docker image
-docker build -t wade-engine:latest ./backend
+docker build -t zerion-engine:latest ./backend
 
 # Run the container
 docker run -p 7860:7860 \
   -e GEMINI_API_KEY="your_gemini_key" \
   -e GROQ_API_KEY="your_groq_key" \
-  wade-engine:latest
+  zerion-engine:latest
 ```
 
 ---

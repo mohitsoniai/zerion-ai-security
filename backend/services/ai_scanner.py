@@ -2,7 +2,7 @@ import json
 import collections
 from backend.config.settings import settings
 from backend.utils.logger import error_logger, app_logger, threat_logger
-import google.generativeai as genai
+from google import genai
 from groq import Groq
 
 class HybridScanner:
@@ -14,7 +14,9 @@ class HybridScanner:
     def __init__(self) -> None:
         self.groq = Groq(api_key=settings.groq_api_key) if settings.groq_api_key else None
         if settings.gemini_api_key: 
-            genai.configure(api_key=settings.gemini_api_key)
+            self.gemini_client = genai.Client(api_key=settings.gemini_api_key)
+        else:
+            self.gemini_client = None
             
         # In-memory size-bounded LRU Cache for scan results
         self.cache_limit = 500
@@ -54,7 +56,7 @@ class HybridScanner:
             )
 
         system_prompt = (
-            "You are WADE Security AI v2. You analyze URLs for phishing, malware, and social engineering threats.\n"
+            "You are Zerion Security AI v5.0. You analyze URLs for phishing, malware, and social engineering threats.\n"
             "BE OBJECTIVE, NOT PARANOID. If VirusTotal is 0 and the domain age is > 30 days old, default to SAFE.\n"
             "You MUST analyze and return ONLY a valid JSON object matching exactly this schema:\n"
             "{\n"
@@ -106,10 +108,12 @@ class HybridScanner:
                 error_logger.error("Groq AI Scan exception raised", e)
 
         # B. Fallback to Google Gemini
-        if not result and settings.gemini_api_key:
+        if not result and self.gemini_client:
             try:
-                model = genai.GenerativeModel('gemini-1.5-flash-latest')
-                res = model.generate_content(f"{system_prompt}\n\n{user_prompt}")
+                res = self.gemini_client.models.generate_content(
+                    model='gemini-1.5-flash',
+                    contents=f"{system_prompt}\n\n{user_prompt}"
+                )
                 if res.text:
                     clean_json = res.text.replace("```json", "").replace("```", "").strip()
                     result = json.loads(clean_json)

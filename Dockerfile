@@ -1,4 +1,4 @@
-# Multi-stage build for WADE Engine API
+# Multi-stage build for Zerion Intelligence Engine API
 FROM python:3.10-slim AS builder
 
 WORKDIR /app

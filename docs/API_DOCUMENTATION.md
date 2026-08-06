@@ -1,6 +1,6 @@
-# WADE AI v2 - API Documentation
+# Zerion AI v2 - API Documentation
 
-WADE AI v2 exposes a RESTful API powered by FastAPI. This API handles real-time threat intelligence gathering, machine learning-based risk score calculations, and system statistics logs.
+Zerion AI v2 exposes a RESTful API powered by FastAPI. This API handles real-time threat intelligence gathering, machine learning-based risk score calculations, and system statistics logs.
 
 ---
 
@@ -11,8 +11,8 @@ When deployed on Hugging Face Spaces: `https://<your-space-name>.hf.space`
 ---
 
 ## 🔒 Authentication & Headers
-WADE AI v2 operates fully **open access**. 
-No authentication header (`X-WADE-API-KEY`) or login credentials are required to communicate with endpoints. The application is ready to use immediately upon client installation.
+Zerion AI v2 operates fully **open access**. 
+No authentication header (`X-Zerion AI-API-KEY`) or login credentials are required to communicate with endpoints. The application is ready to use immediately upon client installation.
 
 ---
 

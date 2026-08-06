@@ -1,14 +1,14 @@
-# WADE AI v2 🛡️ (Web AI Defense Engine)
+# Zerion AI v2 🛡️ (AI-Powered Browser Security Platform)
 
-[![Version](https://img.shields.io/badge/version-2.1.0-blue.svg)](https://github.com/mohitsoniai/WADE-AI-extension)
+[![Version](https://img.shields.io/badge/version-2.1.0-blue.svg)](https://github.com/mohitsoniai/Zerion AI-AI-extension)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](#license)
 [![Status](https://img.shields.io/badge/status-Stable-success)](#status)
 [![Platform](https://img.shields.io/badge/platform-Chrome--Extension-orange.svg)](#installation)
 [![Docker](https://img.shields.io/badge/docker-verified-blue.svg)](#docker-container-quickstart)
 
-WADE AI v2 (Web AI Defense Engine) is a next-generation, AI-powered browser security platform designed to identify, analyze, and neutralize sophisticated web-based threats in real-time. Traditional security solutions rely on static blacklists, leaving users vulnerable to zero-day phishing campaigns, credential harvesting, and obfuscated malicious scripts.
+Zerion AI v2 (AI-Powered Browser Security Platform) is a next-generation, AI-powered browser security platform designed to identify, analyze, and neutralize sophisticated web-based threats in real-time. Traditional security solutions rely on static blacklists, leaving users vulnerable to zero-day phishing campaigns, credential harvesting, and obfuscated malicious scripts.
 
-WADE AI v2 solves this by integrating **multi-provider Threat Intelligence** (AbuseIPDB, Google Safe Browsing, URLScan, VirusTotal, OpenPhish), **dual Large Language Model (LLM)** intent audits, and local SQLite caches to deliver subsecond verdicts with zero-trust execution.
+Zerion AI v2 solves this by integrating **multi-provider Threat Intelligence** (AbuseIPDB, Google Safe Browsing, URLScan, VirusTotal, OpenPhish), **dual Large Language Model (LLM)** intent audits, and local SQLite caches to deliver subsecond verdicts with zero-trust execution.
 
 > [!IMPORTANT]
 > **Open Architecture:** This platform is fully open and does not require account creation, passwords, logins, or API keys for browser interaction. The extension and backend function out-of-the-box immediately upon installation.
@@ -17,14 +17,14 @@ WADE AI v2 solves this by integrating **multi-provider Threat Intelligence** (Ab
 
 ## 🏗️ Architecture Overview
 
-WADE v2 follows a **Service-Oriented Architecture (SOA)** consisting of:
+Zerion AI v2 follows a **Service-Oriented Architecture (SOA)** consisting of:
 
 1. **The Eyes (Frontend):** A Manifest V3 Chrome Extension that tracks DOM changes, intercepts navigation events, and runs an out-of-band URL hover auditor.
 2. **The Brain (Backend):** A FastAPI Python engine coordinating VirusTotal, Google Safe Browsing, AbuseIPDB, URLScan, and active phishing databases (URLHaus, OpenPhish).
 3. **The Intelligence Layer (AI):** A dual-LLM pipeline utilizing **Groq (Llama 3.3 70B)** for intent analysis and **Google Gemini 1.5 Flash** for fallback classification.
 4. **The Storage (Database):** A SQLite database tracking threat audit logs and keeping caches (`threat_intel_cache`, `api_cache`) to prevent rate-limit depletion.
 
-For details, view the [docs/SYSTEM_ARCHITECTURE.md](file:///c:/Users/MOHIT%20SONI/WADE-AI-Defense/docs/SYSTEM_ARCHITECTURE.md).
+For details, view the [docs/SYSTEM_ARCHITECTURE.md](file:///c:/Users/MOHIT%20SONI/Zerion AI-AI-Defense/docs/SYSTEM_ARCHITECTURE.md).
 
 ---
 
@@ -51,7 +51,7 @@ For details, view the [docs/SYSTEM_ARCHITECTURE.md](file:///c:/Users/MOHIT%20SON
 ## 🗂️ Folder Structure
 
 ```
-wade-ai-defense/
+zerion-ai-defense/
 ├── .github/workflows/     # GitHub Actions
 │   └── deploy.yml
 ├── docs/                  # System Architecture Portals
@@ -83,14 +83,14 @@ wade-ai-defense/
 
 ## 📦 Installation & Setup
 
-Please follow the detailed [docs/DEPLOYMENT_GUIDE.md](file:///c:/Users/MOHIT%20SONI/WADE-AI-Defense/docs/DEPLOYMENT_GUIDE.md) to set up WADE AI v2.
+Please follow the detailed [docs/DEPLOYMENT_GUIDE.md](file:///c:/Users/MOHIT%20SONI/Zerion AI-AI-Defense/docs/DEPLOYMENT_GUIDE.md) to set up Zerion AI v2.
 
 ### Quick Start (Local Backend):
 
 ```bash
 # Clone the repository
-git clone https://github.com/mohitsoniai/WADE-AI-extension.git
-cd WADE-AI-Defense
+git clone https://github.com/mohitsoniai/Zerion AI-AI-extension.git
+cd Zerion AI-AI-Defense
 
 # Configure environment variables
 cp .env.example .env
@@ -114,8 +114,8 @@ docker-compose up --build
 The server will start running on port `7860`. You can access the Web Command Center Dashboard at `http://localhost:7860/` and verify server health status at `http://localhost:7860/health`.
 
 ### ☁️ Cloud Deployments:
-* **Render:** Blueprinted automatically via [render.yaml](file:///c:/Users/MOHIT%20SONI/WADE-AI-Defense/render.yaml).
-* **Vercel:** Bypassed and hosted using serverless rules in [vercel.json](file:///c:/Users/MOHIT%20SONI/WADE-AI-Defense/vercel.json).
+* **Render:** Blueprinted automatically via [render.yaml](file:///c:/Users/MOHIT%20SONI/Zerion AI-AI-Defense/render.yaml).
+* **Vercel:** Bypassed and hosted using serverless rules in [vercel.json](file:///c:/Users/MOHIT%20SONI/Zerion AI-AI-Defense/vercel.json).
 
 ### GitHub Recommended Topics
 `chrome-extension`, `fastapi`, `cybersecurity`, `artificial-intelligence`, `phishing-detection`, `threat-intelligence`, `docker`

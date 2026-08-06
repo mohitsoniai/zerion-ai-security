@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: wade-api
+    name: zerion-api
     env: docker
     dockerfilePath: Dockerfile
     port: 7860

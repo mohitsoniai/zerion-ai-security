@@ -1,9 +1,9 @@
-// hover_script.js - WADE Heads-Up Display (Optimized for Cache)
+// hover_script.js - Zerion Heads-Up Display (Optimized for Cache)
 
 let hoverTimer = null;
 let currentHUD = null;
 
-console.log('[WADE] Link Hover & Webmail Scanner Active.');
+console.log('[Zerion] Link Hover & Webmail Scanner Active.');
 
 function scanPageLinks() {
   // Grab all standard hyperlinks on the page
@@ -11,15 +11,15 @@ function scanPageLinks() {
 
   links.forEach((link) => {
     // Skip links we have already scanned to save processing power
-    if (link.hasAttribute('data-wade-scanned')) return;
-    link.setAttribute('data-wade-scanned', 'true');
+    if (link.hasAttribute('data-zerion-scanned')) return;
+    link.setAttribute('data-zerion-scanned', 'true');
 
     // Send the URL to background.js for AI/OSINT evaluation
     chrome.runtime.sendMessage({ action: 'scan_link_heuristic', url: link.href }, (response) => {
       // If the backend AI scores this higher than 75, block it visually
       if (response && response.risk_score > 75) {
-        link.classList.add('wade-blocked-link');
-        link.innerText = `[🚨 WADE BLOCKED: PHISHING] ${link.innerText}`;
+        link.classList.add('zerion-blocked-link');
+        link.innerText = `[🚨 ZERION BLOCKED: PHISHING] ${link.innerText}`;
 
         // Physically prevent the click event
         link.addEventListener(
@@ -27,7 +27,7 @@ function scanPageLinks() {
           function (event) {
             event.preventDefault();
             event.stopPropagation();
-            alert('WADE IPS: Connection to this hostile domain has been severed.');
+            alert('Zerion IPS: Connection to this hostile domain has been severed.');
           },
           true
         );
@@ -106,7 +106,7 @@ function showHUD(element, url) {
   hud.innerHTML = `
         <div style="display: flex; align-items: center; gap: 10px;">
             <div style="width: 10px; height: 10px; border-radius: 50%; background: #00f3ff; box-shadow: 0 0 10px #00f3ff; animation: pulse 1s infinite;"></div>
-            <span id="wade-hud-status">SCANNING TARGET...</span>
+            <span id="zerion-hud-status">SCANNING TARGET...</span>
         </div>
         <style>@keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }</style>
     `;
@@ -120,7 +120,7 @@ function showHUD(element, url) {
   // If it takes more than 2 seconds, the Cloud is likely waking up
   const wakeTimer = setTimeout(() => {
     if (!isResponded && currentHUD === hud) {
-      const statusSpan = hud.querySelector('#wade-hud-status');
+      const statusSpan = hud.querySelector('#zerion-hud-status');
       if (statusSpan) {
         statusSpan.innerText = 'WAKING CLOUD AI...';
         statusSpan.style.color = '#ffa500';
@@ -172,7 +172,7 @@ function showHUD(element, url) {
 
     hud.innerHTML = `
             <div style="border-bottom: 1px solid #333; padding-bottom: 8px; margin-bottom: 8px; display: flex; justify-content: space-between;">
-                <span style="color: #888; font-size: 10px;">WADE PROTOCOL</span>
+                <span style="color: #888; font-size: 10px;">ZERION PROTOCOL</span>
                 <span style="color: ${color}; font-weight: bold; font-size: 14px;">RISK: ${data.risk_score}%</span>
             </div>
             <div style="margin-bottom: 6px; font-weight: bold; color: #fff;">${formatAge(data.domain_age)}</div>

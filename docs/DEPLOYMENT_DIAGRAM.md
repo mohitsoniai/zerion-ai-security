@@ -1,17 +1,17 @@
-# WADE AI v2 - Deployment Diagram
+# Zerion AI v2 - Deployment Diagram
 
-This document details the target cloud deployment and local installation boundaries for WADE AI v2.
+This document details the target cloud deployment and local installation boundaries for Zerion AI v2.
 
 ---
 
 ## 🚀 Cloud Deployment Layout
 
-WADE AI v2 features a completely decoupled architecture, allowing the extension client to interact directly with any hosted Docker container instances.
+Zerion AI v2 features a completely decoupled architecture, allowing the extension client to interact directly with any hosted Docker container instances.
 
 ```mermaid
 graph TD
     subgraph Client Endpoint (Client Host)
-        Ext[WADE Chrome Extension MV3]
+        Ext[Zerion AI Chrome Extension MV3]
         LocalCache[(Local HTML5 storage)]
         Ext <--> LocalCache
     end
@@ -24,7 +24,7 @@ graph TD
     subgraph Production Cloud Boundaries (VPS / Containers)
         DockerHost[Docker Runner Container]
         FastAPI[FastAPI Server App]
-        SqliteDB[(Local SQLite wade_logs.db)]
+        SqliteDB[(Local SQLite zerion_logs.db)]
         
         DockerHost --> FastAPI
         FastAPI <--> SqliteDB
@@ -55,10 +55,10 @@ docker-compose up --build
 This starts the backend API service on port `7860`, reading settings dynamically from `.env` or system variables.
 
 ### 2. Render / Vercel Deployments
-* **Vercel Serverless Hosting:** The project is configured with a root [vercel.json](file:///c:/Users/MOHIT%20SONI/WADE-AI-Defense/vercel.json) configuration mapping the FastAPI app. Deploy directly to Vercel via:
+* **Vercel Serverless Hosting:** The project is configured with a root [vercel.json](file:///c:/Users/MOHIT%20SONI/Zerion AI-AI-Defense/vercel.json) configuration mapping the FastAPI app. Deploy directly to Vercel via:
   ```bash
   npm i -g vercel
   vercel
   ```
-* **Render Service Deployments:** Render builds the backend using the root [render.yaml](file:///c:/Users/MOHIT%20SONI/WADE-AI-Defense/render.yaml) infrastructure spec which exposes port `7860`.
+* **Render Service Deployments:** Render builds the backend using the root [render.yaml](file:///c:/Users/MOHIT%20SONI/Zerion AI-AI-Defense/render.yaml) infrastructure spec which exposes port `7860`.
 * **Hugging Face Spaces:** Can be hosted as a **Docker Space**. Hugging Face mounts the exposed port `7860` automatically.

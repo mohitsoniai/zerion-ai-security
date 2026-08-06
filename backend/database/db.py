@@ -30,9 +30,16 @@ def init_db() -> None:
                     whois_summary TEXT,
                     ssl_analysis TEXT,
                     recommendations TEXT,
-                    false_positive_probability REAL DEFAULT 0.0
+                    false_positive_probability REAL DEFAULT 0.0,
+                    domain_age INTEGER DEFAULT -1
                 )
             ''')
+            
+            # Migration check to add domain_age if it's missing from existing db files
+            try:
+                conn.execute("ALTER TABLE logs ADD COLUMN domain_age INTEGER DEFAULT -1")
+            except sqlite3.OperationalError:
+                pass # Column already exists
             
             # 2. threat_intel_cache table (Caching API results of VT, URLScan, Safe Browsing, AbuseIPDB)
             conn.execute('''
@@ -75,6 +82,12 @@ def init_db() -> None:
                 )
             ''')
             
+            # 6. Performance Optimization Indexes
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_logs_timestamp ON logs(timestamp DESC)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_logs_url ON logs(url)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_api_cache_url ON api_cache(url)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_threat_intel_cache_domain ON threat_intel_cache(domain)")
+            
         app_logger.info("Database schemas initialized successfully.")
     except Exception as e:
         error_logger.error("Failed to initialize database tables", e)
@@ -98,9 +111,9 @@ def log_threat_scan(url: str, result: dict, username: str = "Anonymous") -> None
                     url, score, verdict, sources, username, confidence_score, explanation, 
                     risk_category, severity, detection_reason, threat_labels, 
                     suspicious_indicators, domain_reputation, whois_summary, 
-                    ssl_analysis, recommendations, false_positive_probability
+                    ssl_analysis, recommendations, false_positive_probability, domain_age
                 ) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     url,
@@ -119,7 +132,8 @@ def log_threat_scan(url: str, result: dict, username: str = "Anonymous") -> None
                     result.get("whois_summary", "Unresolved"),
                     result.get("ssl_analysis", "Unresolved"),
                     result.get("recommendations", "No warnings."),
-                    float(result.get("false_positive_probability", 0.0))
+                    float(result.get("false_positive_probability", 0.0)),
+                    int(result.get("domain_age", -1))
                 )
             )
             
@@ -132,16 +146,6 @@ def log_threat_scan(url: str, result: dict, username: str = "Anonymous") -> None
     except Exception as e:
         error_logger.error(f"Failed logging threat scan to DB for URL: {url}", e)
 
-def log_threat_report(domain: str, report_type: str, comment: str) -> None:
-    """Inserts a user-submitted threat report into the database."""
-    try:
-        with sqlite3.connect(settings.db_path) as conn:
-            conn.execute(
-                "INSERT INTO threat_reports (domain, report_type, comment) VALUES (?, ?, ?)",
-                (domain, report_type, comment)
-            )
-    except Exception as e:
-        error_logger.error(f"Failed logging threat report for {domain}", e)
 
 def get_threat_intel_cache(domain: str) -> dict | None:
     """Retrieves cached threat intelligence metrics for a domain if fresher than 12 hours."""
@@ -308,15 +312,16 @@ def get_recent_scans_logs(limit: int = 20) -> list[dict]:
             conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
             cursor.execute(
-                f"""
+                """
                 SELECT id, url, score, verdict, timestamp, confidence_score, risk_category, 
                        severity, detection_reason, threat_labels, suspicious_indicators, 
                        domain_reputation, whois_summary, ssl_analysis, recommendations, 
-                       false_positive_probability
+                       false_positive_probability, domain_age
                 FROM logs 
                 ORDER BY timestamp DESC 
-                LIMIT {limit}
-                """
+                LIMIT ?
+                """,
+                (limit,)
             )
             scans = []
             for row in cursor.fetchall():
@@ -324,6 +329,13 @@ def get_recent_scans_logs(limit: int = 20) -> list[dict]:
                     indicators = json.loads(row["suspicious_indicators"])
                 except:
                     indicators = []
+                
+                # Retrieve domain age gracefully
+                try:
+                    d_age = row["domain_age"] if "domain_age" in row.keys() else -1
+                except:
+                    d_age = -1
+
                 scans.append({
                     "_id": row["id"],
                     "url": row["url"],
@@ -340,7 +352,8 @@ def get_recent_scans_logs(limit: int = 20) -> list[dict]:
                     "whois_summary": row["whois_summary"],
                     "ssl_analysis": row["ssl_analysis"],
                     "recommendations": row["recommendations"],
-                    "false_positive_probability": row["false_positive_probability"]
+                    "false_positive_probability": row["false_positive_probability"],
+                    "domain_age": d_age
                 })
             return scans
     except Exception as e:

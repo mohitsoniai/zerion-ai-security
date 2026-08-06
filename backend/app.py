@@ -1,5 +1,15 @@
+import sys
+import os
+
+# Allow running directly or as a module
+current_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.dirname(current_dir)
+if parent_dir not in sys.path:
+    sys.path.insert(0, parent_dir)
+
 import asyncio
 import sqlite3
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -20,11 +30,19 @@ from backend.controllers import analyze, dashboard
 from backend.services.threat_intel import intel_db
 from backend.utils.logger import app_logger
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Triggers background intelligence updates upon API startup."""
+    app_logger.info("Starting Zerion Intelligence Engine backend services...")
+    asyncio.create_task(intel_db.update_feeds())
+    yield
+
 # Initialize FastAPI App
 app = FastAPI(
-    title="WADE Engine Ultimate",
-    description="Web AI Defense Engine API - AI-Powered Web Security Platform",
-    version="2.0.0"
+    title="Zerion Intelligence Engine",
+    description="Zerion Intelligence Engine API - AI-Powered Browser Security Platform",
+    version="2.0.0",
+    lifespan=lifespan
 )
 
 # 1. CORS Configuration
@@ -47,11 +65,7 @@ app.add_exception_handler(StarletteHTTPException, http_exception_handler)
 app.include_router(analyze.router)
 app.include_router(dashboard.router)
 
-@app.on_event("startup")
-async def startup_event() -> None:
-    """Triggers background intelligence updates upon API startup."""
-    app_logger.info("Starting WADE Engine backend services...")
-    asyncio.create_task(intel_db.update_feeds())
+
 
 @app.get("/health")
 async def health_check() -> JSONResponse:
@@ -97,4 +111,13 @@ async def read_root() -> str:
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("backend.app:app", host="0.0.0.0", port=7860, reload=True)
+    import os
+    import sys
+    
+    # Disable reload by default on Windows to prevent orphaned background processes
+    # from locking port 7860.
+    is_windows = sys.platform.startswith("win")
+    default_reload = "false" if is_windows else "true"
+    reload_env = os.getenv("ZERION_RELOAD", default_reload).lower() == "true"
+    
+    uvicorn.run("backend.app:app", host="0.0.0.0", port=7860, reload=reload_env)

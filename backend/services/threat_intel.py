@@ -10,7 +10,7 @@ class ThreatIntel:
         self.loaded: bool = False
 
     async def update_feeds(self) -> None:
-        """Asynchronously fetches active phishing links and malware threats from open sources."""
+        """Asynchronously fetches active phishing links and malware threats from open sources concurrently."""
         app_logger.info("Updating Threat Intelligence feeds from GitHub, URLHaus, and OpenPhish...")
         sources = [
             "https://urlhaus.abuse.ch/downloads/text_online/",
@@ -18,20 +18,25 @@ class ThreatIntel:
             "https://openphish.com/feed.txt"
         ]
         
-        count = 0
         async with httpx.AsyncClient() as client:
-            for source in sources:
+            async def fetch_source(source: str) -> set[str]:
+                local_set = set()
                 try:
                     r = await client.get(source, timeout=15.0)
                     if r.status_code == 200:
                         for line in r.text.splitlines():
                             line_str = line.strip()
                             if not line_str.startswith("#") and line_str:
-                                self.malicious_urls.add(line_str)
-                                count += 1
+                                local_set.add(line_str)
                 except Exception as e:
                     error_logger.error(f"Feed sync error from source: {source}", e)
-                self.loaded = True
+                return local_set
+
+            results = await asyncio.gather(*(fetch_source(source) for source in sources))
+            for res in results:
+                self.malicious_urls.update(res)
+            
+            self.loaded = True
         app_logger.info(f"Threat Intelligence updated successfully: {len(self.malicious_urls)} active entries loaded.")
 
 intel_db = ThreatIntel()

@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>WADE Security Shield</title>
+    <title>Zerion Browser Guard</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Space+Grotesk:wght@400;700&display=swap" rel="stylesheet" />
     <style>
       :root {
@@ -383,6 +383,121 @@
         border-color: #ccc !important;
         color: #1a1a24 !important;
       }
+      /* Security Report Drawer Slide */
+      .report-drawer {
+        position: fixed;
+        top: 0;
+        right: -360px;
+        width: 350px;
+        height: 100%;
+        background: rgba(8, 8, 12, 0.98);
+        backdrop-filter: blur(20px);
+        box-shadow: -5px 0 25px rgba(0,0,0,0.8);
+        z-index: 150; /* Above settings drawer */
+        padding: 15px;
+        box-sizing: border-box;
+        transition: right 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        border-left: 1px solid rgba(0, 243, 255, 0.2);
+        display: flex;
+        flex-direction: column;
+        overflow-y: auto;
+      }
+      .report-drawer.open {
+        right: 0;
+      }
+      .report-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid rgba(255,255,255,0.08);
+        padding-bottom: 10px;
+        margin-bottom: 15px;
+      }
+      .report-title-text {
+        font-size: 13px;
+        font-weight: bold;
+        color: var(--cyan);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+      .report-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        margin-bottom: 15px;
+      }
+      .report-card {
+        background: rgba(255,255,255,0.02);
+        border: 1px solid rgba(255,255,255,0.05);
+        border-radius: 8px;
+        padding: 8px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .report-lbl {
+        font-size: 9px;
+        color: var(--text-muted);
+        text-transform: uppercase;
+      }
+      .report-val {
+        font-size: 11px;
+        font-weight: bold;
+        color: white;
+      }
+      .report-analysis-box {
+        background: rgba(0, 243, 255, 0.02);
+        border: 1px solid rgba(0, 243, 255, 0.1);
+        border-radius: 8px;
+        padding: 10px;
+        margin-bottom: 15px;
+        line-height: 1.4;
+      }
+      .report-analysis-title {
+        font-size: 10px;
+        font-weight: bold;
+        color: var(--cyan);
+        text-transform: uppercase;
+        margin-bottom: 6px;
+        letter-spacing: 0.5px;
+      }
+      .report-analysis-text {
+        font-size: 10.5px;
+        color: #d1d2dc;
+        font-family: inherit;
+      }
+      .recommendation-box {
+        border-radius: 8px;
+        padding: 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        margin-top: auto;
+      }
+      .rec-safe {
+        background: rgba(34, 197, 94, 0.1);
+        border: 1px solid rgba(34, 197, 94, 0.3);
+        color: #22c55e;
+      }
+      .rec-caution {
+        background: rgba(255, 170, 0, 0.1);
+        border: 1px solid rgba(255, 170, 0, 0.3);
+        color: #ffaa00;
+      }
+      .rec-avoid {
+        background: rgba(255, 77, 77, 0.1);
+        border: 1px solid rgba(255, 77, 77, 0.3);
+        color: #ff4d4d;
+      }
+      .rec-title {
+        font-size: 10px;
+        font-weight: bold;
+        text-transform: uppercase;
+      }
+      .rec-text {
+        font-size: 11px;
+        font-weight: 600;
+      }
     </style>
   </head>
   <body>
@@ -437,6 +552,7 @@
             <span class="card-val" id="vt-data">--</span>
           </div>
         </div>
+        <button id="view-report-btn" class="btn-outline" style="border-radius: 8px; margin-top: 10px; display: none; border-color: var(--cyan); color: var(--cyan); background: rgba(0, 243, 255, 0.03);">🛡️ VIEW SECURITY REPORT</button>
       </div>
 
       <button id="scan-btn" class="btn-outline" style="border-radius: 8px;">🔄 RE-AUDIT ACTIVE TAB</button>
@@ -475,7 +591,7 @@
 
       <div class="glass-panel" style="padding: 15px;">
         <h4 style="margin-top:0; margin-bottom:4px; font-size:11px; color:var(--cyan); text-transform:uppercase;">SOC Threat Reporter</h4>
-        <p style="font-size:9px; color:var(--text-muted); margin-top:0; margin-bottom:12px;">Submit false positive links directly to WADE intelligence database.</p>
+        <p style="font-size:9px; color:var(--text-muted); margin-top:0; margin-bottom:12px;">Submit false positive links directly to Zerion intelligence database.</p>
         <div style="display:flex; flex-direction:column; gap:8px;">
           <input type="text" id="report-domain-input" placeholder="URL Hostname" style="padding:8px; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.08); color:white; border-radius:6px; font-family:inherit; font-size:11px;" readonly />
           <select id="report-type" style="padding:8px; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.08); color:white; border-radius:6px; font-family:inherit; font-size:11px; cursor:pointer;">
@@ -513,7 +629,68 @@
       </div>
       
       <div style="font-size:9px; color:var(--text-muted); text-align:center; border-top:1px solid rgba(255,255,255,0.05); padding-top:10px;">
-        WADE Security Shield v2.1.0
+        Zerion Browser Guard v5.0
+      </div>
+    </div>
+
+    <!-- Slide-in Security Report Panel -->
+    <div class="report-drawer" id="report-drawer">
+      <div class="report-header">
+        <span class="report-title-text">Security Threat Intel Report</span>
+        <button class="drawer-close" id="close-report-btn">×</button>
+      </div>
+      
+      <div class="report-grid">
+        <div class="report-card" style="grid-column: span 2;">
+          <span class="report-lbl">Website URL</span>
+          <span class="report-val" id="rep-url" style="word-break: break-all; color: var(--cyan);">--</span>
+        </div>
+        <div class="report-card">
+          <span class="report-lbl">Verdict</span>
+          <span class="report-val" id="rep-verdict">--</span>
+        </div>
+        <div class="report-card">
+          <span class="report-lbl">Risk Score</span>
+          <span class="report-val" id="rep-score">--</span>
+        </div>
+        <div class="report-card">
+          <span class="report-lbl">AI Confidence</span>
+          <span class="report-val" id="rep-confidence">--</span>
+        </div>
+        <div class="report-card">
+          <span class="report-lbl">Threat Category</span>
+          <span class="report-val" id="rep-category">--</span>
+        </div>
+        <div class="report-card">
+          <span class="report-lbl">SSL Status</span>
+          <span class="report-val" id="rep-ssl">--</span>
+        </div>
+        <div class="report-card">
+          <span class="report-lbl">Domain Age</span>
+          <span class="report-val" id="rep-age">--</span>
+        </div>
+        <div class="report-card">
+          <span class="report-lbl">VirusTotal Ratio</span>
+          <span class="report-val" id="rep-vt">--</span>
+        </div>
+        <div class="report-card">
+          <span class="report-lbl">Threat Intel Match</span>
+          <span class="report-val" id="rep-intel">--</span>
+        </div>
+        <div class="report-card" style="grid-column: span 2;">
+          <span class="report-lbl">WHOIS Summary</span>
+          <span class="report-val" id="rep-whois" style="font-size:10px;">--</span>
+        </div>
+      </div>
+
+      <div class="report-analysis-box">
+        <div class="report-analysis-title">AI Security Analysis</div>
+        <div class="report-analysis-text" id="rep-analysis">--</div>
+      </div>
+
+      <div class="recommendation-box" id="rep-recommendation">
+        <div class="rec-title">Recommended Action</div>
+        <div class="rec-text" id="rep-rec-text">--</div>
       </div>
     </div>
 

@@ -1,6 +1,6 @@
 // --- background.js ---
 const API_URL = 'http://localhost:7860';
-const WADE_API_KEY = 'wade_secret_key_v2';
+const ZERION_API_KEY = 'zerion_secret_key_v2';
 
 // ==========================================
 // 1. DYNAMIC THREAT INTEL SYNC
@@ -14,7 +14,7 @@ chrome.alarms.onAlarm.addListener((alarm) => {
 });
 
 function syncTrustedDomains() {
-  console.log('🛡️ WADE: Syncing Global Trusted Domains (Tranco Top 10k)...');
+  console.log('🛡️ Zerion: Syncing Global Trusted Domains (Tranco Top 10k)...');
   fetch(`${API_URL}/trusted-domains`)
     .then((res) => {
       if (!res.ok) throw new Error('Server asleep or unavailable');
@@ -23,17 +23,17 @@ function syncTrustedDomains() {
     .then((data) => {
       if (data.success && data.domains) {
         chrome.storage.local.set({ globalTrusted: data.domains }, () => {
-          console.log(`✅ WADE: Successfully memorized ${data.domains.length} safe domains.`);
+          console.log(`✅ Zerion: Successfully memorized ${data.domains.length} safe domains.`);
         });
       }
     })
-    .catch((err) => console.error('❌ WADE: Failed to sync Tranco domains', err));
+    .catch((err) => console.error('❌ Zerion: Failed to sync Tranco domains', err));
 }
 
 // ==========================================
 // 2. LOGGING HELPER & UI UPDATES
 // ==========================================
-function saveToHistory(url, score, reason, category = 'Safe', severity = 'Informational') {
+function saveToHistory(url, score, reason, category = 'Safe', severity = 'Informational', rawData = null) {
   chrome.storage.local.get({ scanHistory: [] }, (result) => {
     let history = result.scanHistory;
     if (history.length > 0 && history[history.length - 1].url === url) return;
@@ -46,6 +46,7 @@ function saveToHistory(url, score, reason, category = 'Safe', severity = 'Inform
       severity: severity,
       timestamp: new Date().toISOString(),
       date: new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString(),
+      rawData: rawData
     });
 
     if (history.length > 50) history.shift();
@@ -54,6 +55,11 @@ function saveToHistory(url, score, reason, category = 'Safe', severity = 'Inform
 }
 
 function updateBadge(score) {
+  if (score === undefined || score === null || isNaN(parseInt(score))) {
+    chrome.action.setBadgeText({ text: '?' });
+    chrome.action.setBadgeBackgroundColor({ color: '#888' });
+    return;
+  }
   chrome.action.setBadgeText({ text: score.toString() });
   let color = score > 75 ? '#FF0000' : score > 30 ? '#FFA500' : '#00FF00';
   chrome.action.setBadgeBackgroundColor({ color: color });
@@ -159,19 +165,24 @@ function performScan(tabId, url) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'X-WADE-API-KEY': WADE_API_KEY,
+      'X-ZERION-API-KEY': ZERION_API_KEY,
     },
     body: JSON.stringify({ url: url }),
   })
-    .then((res) => res.json())
+    .then((res) => {
+      if (!res.ok) throw new Error('Network response was not ok');
+      return res.json();
+    })
     .then((data) => {
+      if (data.risk_score === undefined) throw new Error('Invalid response structure');
       updateBadge(data.risk_score);
       saveToHistory(
         url,
         data.risk_score,
         data.threat_type || 'AI Analysis',
         data.risk_category || 'Safe',
-        data.severity || 'Informational'
+        data.severity || 'Informational',
+        data
       );
       chrome.tabs.sendMessage(tabId, { action: 'SCAN_RESULT', data: data }).catch(() => {});
 
@@ -193,7 +204,7 @@ function performScan(tabId, url) {
             chrome.notifications.create({
               type: 'basic',
               iconUrl: 'icons/icon.png',
-              title: 'WADE Security Block',
+              title: 'Zerion Security Block',
               message: `Severed connection to hostile domain: ${new URL(url).hostname}. Risk Level: ${data.risk_score}%`,
             });
           } catch (e) {
@@ -202,7 +213,11 @@ function performScan(tabId, url) {
         }
       });
     })
-    .catch(() => chrome.action.setBadgeText({ text: 'ERR' }));
+    .catch((err) => {
+      console.error('Scan request failed:', err);
+      chrome.action.setBadgeText({ text: 'ERR' });
+      chrome.action.setBadgeBackgroundColor({ color: '#FF0000' });
+    });
 }
 
 // ==========================================
@@ -225,9 +240,9 @@ chrome.downloads.onCreated.addListener(function (downloadItem) {
     chrome.notifications.create({
       type: 'basic',
       iconUrl: 'icons/icon.png',
-      title: 'WADE Security Notice',
+      title: 'Zerion Security Notice',
       message:
-        'Dangerous file type detected. WADE does not scan local files. Do not enable macros or run blindly!',
+        'Dangerous file type detected. Zerion does not scan local files. Do not enable macros or run blindly!',
     });
   }
 });
@@ -302,12 +317,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'X-WADE-API-KEY': WADE_API_KEY,
+              'X-ZERION-API-KEY': ZERION_API_KEY,
             },
             body: JSON.stringify({ url: request.url }),
           })
-            .then((res) => res.json())
+            .then((res) => {
+              if (!res.ok) throw new Error('API response not OK');
+              return res.json();
+            })
             .then((data) => {
+              if (data.risk_score === undefined) throw new Error('Invalid response structure');
               sendResponse({ success: true, risk_score: data.risk_score, data: data });
             })
             .catch((err) => {

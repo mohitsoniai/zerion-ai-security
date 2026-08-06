@@ -1,7 +1,8 @@
 import time
-import requests
 import zipfile
 import io
+import httpx
+import asyncio
 from fastapi import APIRouter
 from backend.database.db import get_db_stats, get_recent_scans_logs
 from backend.utils.logger import error_logger, app_logger
@@ -25,7 +26,7 @@ async def get_recent_scans() -> list[dict]:
     return get_recent_scans_logs(limit=20)
 
 @router.get("/trusted-domains")
-def get_trusted_domains() -> dict:
+async def get_trusted_domains() -> dict:
     """
     Downloads and caches the Tranco Top 10k list to avoid zero-day overhead 
     on highly reputable sites.
@@ -36,25 +37,32 @@ def get_trusted_domains() -> dict:
     # 24-hour cache refresh check (86400 seconds)
     if current_time - trusted_cache["timestamp"] > 86400 or not trusted_cache["domains"]:
         try:
-            app_logger.info("WADE: Downloading latest Tranco Top 10k list...")
+            app_logger.info("Zerion: Downloading latest Tranco Top 10k list...")
             url = "https://tranco-list.eu/top-1m.csv.zip"
-            resp = requests.get(url, timeout=10)
+            
+            async with httpx.AsyncClient() as client:
+                resp = await client.get(url, timeout=15.0)
             
             if resp.status_code == 200:
-                with zipfile.ZipFile(io.BytesIO(resp.content)) as z:
-                    csv_name = z.namelist()[0]
-                    with z.open(csv_name) as f:
-                        domains = []
-                        for i, line in enumerate(f):
-                            if i >= 10000: 
-                                break
-                            domain = line.decode('utf-8').strip().split(',')[1]
-                            domains.append(domain)
-                            
+                def extract_tranco():
+                    with zipfile.ZipFile(io.BytesIO(resp.content)) as z:
+                        csv_name = z.namelist()[0]
+                        with z.open(csv_name) as f:
+                            domains = []
+                            for i, line in enumerate(f):
+                                if i >= 10000: 
+                                    break
+                                domain = line.decode('utf-8').strip().split(',')[1]
+                                domains.append(domain)
+                            return domains
+                
+                loop = asyncio.get_running_loop()
+                domains = await loop.run_in_executor(None, extract_tranco)
+                
                 custom_safe = ["paruluniversity.ac.in"]
                 trusted_cache["domains"] = list(set(domains + custom_safe))
                 trusted_cache["timestamp"] = current_time
-                app_logger.info(f"WADE: Successfully cached {len(trusted_cache['domains'])} trusted domains.")
+                app_logger.info(f"Zerion: Successfully cached {len(trusted_cache['domains'])} trusted domains.")
             
         except Exception as e:
             error_logger.error("Failed to sync Tranco list. Reverting to backup domains.", e)

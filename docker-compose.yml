@@ -1,15 +1,15 @@
 version: '3.8'
 
 services:
-  wade-api:
+  zerion-api:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: wade-api-server
+    container_name: zerion-api-server
     ports:
       - "7860:7860"
     environment:
-      - DB_PATH=wade_logs.db
+      - DB_PATH=zerion_logs.db
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - GROQ_API_KEY=${GROQ_API_KEY}
       - VIRUSTOTAL_API_KEY=${VIRUSTOTAL_API_KEY}

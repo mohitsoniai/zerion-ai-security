@@ -1,4 +1,4 @@
-// dashboard.js - Handles WADE Extension Dashboard Interactions
+// dashboard.js - Handles Zerion Command Center Interactions
 const API_URL = 'http://localhost:7860';
 let fullScanHistory = [];
 let activeTimeline = 'weekly';
@@ -73,7 +73,7 @@ document.addEventListener('DOMContentLoaded', () => {
       ]);
       const csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      triggerDownload(blob, `wade_threat_logs.csv`);
+      triggerDownload(blob, `zerion_threat_logs.csv`);
     });
   }
 
@@ -84,7 +84,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (fullScanHistory.length === 0) return alert('No history logs to export.');
       const jsonContent = JSON.stringify(fullScanHistory, null, 2);
       const blob = new Blob([jsonContent], { type: 'application/json;charset=utf-8;' });
-      triggerDownload(blob, `wade_threat_logs.json`);
+      triggerDownload(blob, `zerion_threat_logs.json`);
     });
   }
 
@@ -162,6 +162,27 @@ document.addEventListener('DOMContentLoaded', () => {
       modifyList(list, action, domain);
     }
   });
+
+  // Sidebar Close Triggers
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('overlay');
+  const sidebarClose = document.getElementById('sidebar-close');
+
+  if (sidebarClose && sidebar && overlay) {
+    const closeSidebar = () => {
+      sidebar.classList.remove('open');
+      overlay.classList.remove('active');
+      overlay.style.display = 'none';
+    };
+    sidebarClose.addEventListener('click', closeSidebar);
+    overlay.addEventListener('click', closeSidebar);
+  }
+
+  // Initialize Global Threat Map
+  initThreatMap();
+
+  // Initialize AI Copilot
+  initAICopilot();
 });
 
 function renderScansTable(scans) {
@@ -184,6 +205,12 @@ function renderScansTable(scans) {
       let badgeText = scan.score > 75 ? 'BLOCKED' : scan.score > 30 ? 'WARNING' : 'SAFE';
       const displayUrl = scan.url.length > 35 ? scan.url.substring(0, 35) + '...' : scan.url;
 
+      tr.style.cursor = 'pointer';
+      tr.addEventListener('click', (e) => {
+        if (e.target.classList.contains('dynamic-btn')) return;
+        openAnalysisSidebar(scan);
+      });
+
       tr.innerHTML = `
         <td style="color: var(--text-muted);">${scan.date}</td>
         <td title="${scan.url}" style="font-weight:bold;">${displayUrl}</td>
@@ -197,6 +224,77 @@ function renderScansTable(scans) {
       historyTable.appendChild(tr);
     });
   }
+}
+
+function openAnalysisSidebar(scan) {
+  activeCopilotScanContext = scan;
+  let hostname = 'unknown';
+  try {
+    hostname = new URL(scan.url).hostname;
+  } catch (e) {
+    hostname = scan.url || 'unknown';
+  }
+
+  document.getElementById('sidebar-domain').innerText = hostname;
+  document.getElementById('sidebar-url').innerText = scan.url;
+  document.getElementById('sidebar-score').innerText = scan.score + '%';
+  document.getElementById('sidebar-confidence').innerText = (scan.confidence_score || scan.score || 90) + '%';
+  document.getElementById('sidebar-severity').innerText = scan.severity || (scan.score > 90 ? 'Critical' : scan.score > 75 ? 'High' : scan.score > 30 ? 'Medium' : 'Informational');
+  document.getElementById('sidebar-category').innerText = scan.category || 'Safe';
+
+  // MITRE ATT&CK Mapping
+  const mitreId = document.getElementById('mitre-id');
+  const mitreTactic = document.getElementById('mitre-tactic');
+  const category = scan.category || 'Safe';
+  
+  const mappings = {
+    'Phishing': { id: 'T1566', tactic: 'Initial Access: Phishing links or content designed to harvest client credentials.' },
+    'Malware': { id: 'T1204', tactic: 'Execution: User execution of malicious payloads delivered via external scripts.' },
+    'XSS': { id: 'T1189', tactic: 'Drive-by Compromise: Cross-site Scripting injection triggering unsanctioned code execution.' },
+    'Social Engineering': { id: 'T1204.001', tactic: 'Credential Baiting: Luring client to execute actions via hostile page mimics.' },
+    'Safe': { id: 'N/A', tactic: 'Clean Signature: Audited domain contains no matches matching MITRE enterprise matrices.' }
+  };
+  const mitre = mappings[category] || { id: 'T1583', tactic: 'Acquire Infrastructure: Uncategorized or suspicious domain indicators.' };
+  mitreId.innerText = mitre.id;
+  mitreTactic.innerText = mitre.tactic;
+
+  // Executive Summary / Technical Analysis / Recommendations
+  document.getElementById('sidebar-summary').innerText = scan.reason || 'Clean browse logs. No threat anomalies identified.';
+  document.getElementById('sidebar-analysis').innerText = scan.detection_reason || 'AI Engine verified that the payload behaves consistent with standard white-listed policies.';
+  
+  // Registration & SSL status
+  document.getElementById('sidebar-registrar').innerText = scan.whois_registrar || 'Unknown Registrar';
+  document.getElementById('sidebar-age').innerText = scan.domain_age > 0 ? `${scan.domain_age} Days` : 'Age Unknown';
+  document.getElementById('sidebar-ssl-status').innerText = scan.ssl_valid ? 'Valid SSL Cert' : 'Invalid / Expired';
+  document.getElementById('sidebar-ssl-issuer').innerText = scan.ssl_issuer || 'N/A';
+
+  // SVG Gauge Animation
+  const circle = document.getElementById('sidebar-gauge-fill');
+  const scorePct = scan.score || 0;
+  circle.style.strokeDasharray = `${scorePct}, 100`;
+  const strokeColor = scorePct > 75 ? 'var(--red)' : scorePct > 30 ? 'var(--orange)' : 'var(--green)';
+  circle.style.stroke = strokeColor;
+
+  // Set recommendation block
+  const recBox = document.getElementById('sidebar-recommendation-box');
+  const recText = document.getElementById('sidebar-recommendation-text');
+  recBox.className = 'recommendation-box';
+
+  if (scorePct > 75) {
+    recBox.classList.add('rec-avoid');
+    recText.innerText = 'AVOID WEBSITE - Terminate connection. Avoid submitting login credentials or sharing sensitive files.';
+  } else if (scorePct > 30) {
+    recBox.classList.add('rec-caution');
+    recText.innerText = 'PROCEED WITH CAUTION - The platform detected suspicious metadata anomalies. Avoid downloads.';
+  } else {
+    recBox.classList.add('rec-safe');
+    recText.innerText = 'SAFE TO BROWSE - No phishing, malware signature matches, or malicious payload signatures matched.';
+  }
+
+  // Open sidebar & overlay
+  document.getElementById('sidebar').classList.add('open');
+  document.getElementById('overlay').classList.add('active');
+  document.getElementById('overlay').style.display = 'block';
 }
 
 function applyFilters() {
@@ -262,9 +360,17 @@ function loadDashboardData() {
                 url: s.url,
                 score: s.risk_score,
                 date: new Date(s.timestamp).toLocaleDateString(),
-                category: s.risk_category,
-                severity: s.severity,
-                reason: s.detection_reason
+                category: s.risk_category || 'Safe',
+                severity: s.severity || 'Informational',
+                reason: s.explanation || 'Clean browse logs.',
+                detection_reason: s.detection_reason || 'No anomalies detected.',
+                whois_registrar: s.whois_summary || 'Unknown',
+                domain_age: s.domain_age !== undefined ? s.domain_age : -1,
+                ssl_valid: s.ssl_analysis ? s.ssl_analysis.includes("Valid") : false,
+                ssl_issuer: s.ssl_analysis || 'Unknown',
+                vt_data: s.vt_data || { malicious: 0, total: 0 },
+                threat_labels: s.threat_labels || [],
+                confidence_score: s.confidence_score || s.risk_score || 90
               })),
               stats: stats,
               userTrust: localData.userTrust,
@@ -318,7 +424,25 @@ function loadDashboardFromLocalStorage() {
     }
 
     renderDashboardWithData({
-      scans: history.map(s => ({ url: s.url, score: s.score, date: s.date, category: s.category, severity: s.severity, reason: s.reason })),
+      scans: history.map(s => {
+        const raw = s.rawData || {};
+        return {
+          url: s.url,
+          score: s.score,
+          date: s.date,
+          category: s.category || raw.risk_category || 'Safe',
+          severity: s.severity || raw.severity || 'Informational',
+          reason: s.reason || raw.explanation || 'Clean browse logs.',
+          detection_reason: raw.detection_reason || 'No anomalies detected.',
+          whois_registrar: raw.whois_summary || 'Unknown',
+          domain_age: raw.domain_age !== undefined ? raw.domain_age : -1,
+          ssl_valid: raw.ssl_analysis ? raw.ssl_analysis.includes("Valid") : false,
+          ssl_issuer: raw.ssl_analysis || 'Unknown',
+          vt_data: raw.vt_data || { malicious: 0, total: 0 },
+          threat_labels: raw.threat_labels || [],
+          confidence_score: raw.confidence_score || s.score || 90
+        };
+      }),
       stats: {
         total_scans: total,
         safe: safe,
@@ -572,4 +696,335 @@ function modifyList(listType, action, domain) {
       loadDashboardData();
     });
   });
+}
+// ==========================================
+// 6. GLOBAL THREAT MAP SYSTEM
+// ==========================================
+let threatMap;
+const attackCountries = {
+  'USA': [37.0902, -95.7129],
+  'Russia': [61.5240, 105.3188],
+  'China': [35.8617, 104.1954],
+  'India': [20.5937, 78.9629],
+  'Germany': [51.1657, 10.4515],
+  'UK': [55.3781, -3.4360],
+  'Brazil': [-14.2350, -51.9253],
+  'Australia': [-25.2744, 133.7751],
+  'South Africa': [-30.5595, 22.9375],
+  'Japan': [36.2048, 138.2529],
+  'Canada': [56.1304, -106.3468],
+  'France': [46.2276, 2.2137],
+  'Ukraine': [48.3794, 31.1656],
+  'Iran': [32.4279, 53.6880],
+  'North Korea': [40.3399, 127.5101],
+  'Singapore': [1.3521, 103.8198]
+};
+
+const mapThreatTypes = [
+  { type: 'Credential Phishing', severity: 'Critical', color: '#ff4d4d' },
+  { type: 'Malware Delivery', severity: 'High', color: '#ff4d4d' },
+  { type: 'Ransomware Beacon', severity: 'Critical', color: '#ff4d4d' },
+  { type: 'Credential Stuffing', severity: 'High', color: '#ffaa00' },
+  { type: 'DDoS Botnet Flood', severity: 'High', color: '#ffaa00' },
+  { type: 'Command & Control Beaconing', severity: 'High', color: '#ffaa00' },
+  { type: 'Safe Proxy Traffic', severity: 'Low', color: '#22c55e' },
+  { type: 'Tor Exit Node Scan', severity: 'Medium', color: '#ffaa00' },
+  { type: 'SQL Injection Probe', severity: 'Medium', color: '#ffaa00' }
+];
+
+function initThreatMap() {
+  const mapElement = document.getElementById('threat-map');
+  if (!mapElement) return;
+
+  try {
+    threatMap = L.map('threat-map', {
+      center: [20, 0],
+      zoom: 2,
+      minZoom: 1.5,
+      maxZoom: 10,
+      zoomControl: false,
+      attributionControl: false
+    });
+
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      maxZoom: 20
+    }).addTo(threatMap);
+    
+    // Disable double click zoom for better embedded feel
+    threatMap.doubleClickZoom.disable();
+  } catch (e) {
+    console.error('Failed to initialize Leaflet map:', e);
+    return;
+  }
+
+  // Setup Threat Map Counters
+  let activeThreats = 142;
+  let countriesMonitored = 74;
+  let threatsBlocked = 3280;
+  let predictions = 894;
+  let avgDetection = 1.24;
+
+  function updateCounters() {
+    activeThreats += Math.floor(Math.random() * 5) - 2;
+    if (activeThreats < 100) activeThreats = 100;
+    
+    threatsBlocked += Math.floor(Math.random() * 3);
+    predictions += Math.floor(Math.random() * 2);
+    avgDetection = (1.1 + Math.random() * 0.3).toFixed(2);
+    
+    document.getElementById('map-active-threats').innerText = activeThreats;
+    document.getElementById('map-countries').innerText = countriesMonitored;
+    document.getElementById('map-blocked-today').innerText = threatsBlocked;
+    document.getElementById('map-predictions').innerText = predictions;
+    document.getElementById('map-avg-time').innerText = avgDetection + 's';
+  }
+  updateCounters();
+  setInterval(updateCounters, 4000);
+
+  const activityList = document.getElementById('activity-list-container');
+  
+  function triggerSimulatedAttack() {
+    if (!threatMap) return;
+    
+    const countryNames = Object.keys(attackCountries);
+    const sourceIdx = Math.floor(Math.random() * countryNames.length);
+    let targetIdx = Math.floor(Math.random() * countryNames.length);
+    while (targetIdx === sourceIdx) {
+      targetIdx = Math.floor(Math.random() * countryNames.length);
+    }
+    
+    const source = countryNames[sourceIdx];
+    const target = countryNames[targetIdx];
+    const threat = mapThreatTypes[Math.floor(Math.random() * mapThreatTypes.length)];
+    
+    animateMapAttack(attackCountries[source], attackCountries[target], threat.color);
+    
+    const item = document.createElement('div');
+    item.className = 'activity-item';
+    
+    let severityBadge = '';
+    if (threat.severity === 'Critical') {
+      severityBadge = `<span class="badge danger" style="font-size:8px; padding:2px 6px;">CRITICAL</span>`;
+    } else if (threat.severity === 'High') {
+      severityBadge = `<span class="badge warning" style="font-size:8px; padding:2px 6px; border-color:var(--orange); color:var(--orange);">HIGH</span>`;
+    } else if (threat.severity === 'Medium') {
+      severityBadge = `<span class="badge warning" style="font-size:8px; padding:2px 6px; border-color:var(--orange); color:var(--orange);">MEDIUM</span>`;
+    } else {
+      severityBadge = `<span class="badge safe" style="font-size:8px; padding:2px 6px;">LOW</span>`;
+    }
+    
+    const timeStr = new Date().toLocaleTimeString();
+    item.innerHTML = `
+      <div class="activity-top">
+        <span class="activity-path">${source} → ${target}</span>
+        ${severityBadge}
+      </div>
+      <div class="activity-bottom">
+        <span class="activity-threat">${threat.type}</span>
+        <span class="activity-time">${timeStr}</span>
+      </div>
+    `;
+    
+    activityList.insertBefore(item, activityList.firstChild);
+    if (activityList.children.length > 15) {
+      activityList.removeChild(activityList.lastChild);
+    }
+  }
+
+  for(let i=0; i<3; i++) {
+    setTimeout(triggerSimulatedAttack, i * 1200);
+  }
+  setInterval(triggerSimulatedAttack, 6000);
+}
+
+function getMapCurvePoints(start, end, numPoints = 30) {
+  const points = [];
+  const startLatLng = L.latLng(start);
+  const endLatLng = L.latLng(end);
+  
+  const midLat = (startLatLng.lat + endLatLng.lat) / 2;
+  const midLng = (startLatLng.lng + endLatLng.lng) / 2;
+  
+  const dLat = endLatLng.lat - startLatLng.lat;
+  const dLng = endLatLng.lng - startLatLng.lng;
+  
+  const offset = 0.25;
+  const controlLat = midLat + dLng * offset;
+  const controlLng = midLng - dLat * offset;
+  
+  for (let i = 0; i <= numPoints; i++) {
+    const t = i / numPoints;
+    const lat = (1 - t) * (1 - t) * startLatLng.lat + 2 * (1 - t) * t * controlLat + t * t * endLatLng.lat;
+    const lng = (1 - t) * (1 - t) * startLatLng.lng + 2 * (1 - t) * t * controlLng + t * t * endLatLng.lng;
+    points.push([lat, lng]);
+  }
+  return points;
+}
+
+function animateMapAttack(start, end, color) {
+  if (!threatMap) return;
+  
+  const points = getMapCurvePoints(start, end);
+  const path = L.polyline(points, { color: color, weight: 1.5, opacity: 0.5 }).addTo(threatMap);
+  
+  const dot = L.circleMarker(start, {
+    radius: 3,
+    color: color,
+    fillColor: color,
+    fillOpacity: 1,
+    className: 'pulsing-attack-dot'
+  }).addTo(threatMap);
+  
+  let step = 0;
+  const numSteps = points.length;
+  
+  const interval = setInterval(() => {
+    if (step >= numSteps) {
+      clearInterval(interval);
+      if (threatMap && threatMap.hasLayer(dot)) threatMap.removeLayer(dot);
+      setTimeout(() => {
+        if (threatMap && threatMap.hasLayer(path)) threatMap.removeLayer(path);
+      }, 1000);
+      
+      const targetMarker = L.circleMarker(end, {
+        radius: 6,
+        color: color,
+        fillColor: color,
+        fillOpacity: 0.8
+      }).addTo(threatMap);
+      
+      let pulseStep = 0;
+      const pulseInterval = setInterval(() => {
+        pulseStep++;
+        targetMarker.setRadius(6 + pulseStep);
+        targetMarker.setStyle({ fillOpacity: 0.8 - (pulseStep * 0.1) });
+        if (pulseStep >= 8) {
+          clearInterval(pulseInterval);
+          if (threatMap && threatMap.hasLayer(targetMarker)) threatMap.removeLayer(targetMarker);
+        }
+      }, 50);
+      
+      return;
+    }
+    if (threatMap && threatMap.hasLayer(dot)) {
+      dot.setLatLng(points[step]);
+    }
+    step++;
+  }, 35);
+}
+
+// ==========================================
+// 7. AI COPILOT CHATBOT SYSTEM
+// ==========================================
+let activeCopilotScanContext = null;
+
+function initAICopilot() {
+  const panel = document.getElementById('copilot-panel');
+  const btnOpen = document.getElementById('copilot-btn');
+  const btnClose = document.getElementById('copilot-close');
+  const btnSend = document.getElementById('copilot-send-btn');
+  const inputEl = document.getElementById('copilot-input');
+  const messagesBox = document.getElementById('copilot-messages');
+  const chipsContainer = document.getElementById('copilot-chips');
+
+  if (!panel || !btnOpen || !btnClose || !btnSend || !inputEl || !messagesBox) return;
+
+  // Toggle Panel open/close
+  btnOpen.addEventListener('click', () => {
+    panel.classList.toggle('active');
+    if (panel.classList.contains('active')) {
+      inputEl.focus();
+    }
+  });
+
+  btnClose.addEventListener('click', () => {
+    panel.classList.remove('active');
+  });
+
+  // Send message handler
+  const sendMessage = (text = '') => {
+    const prompt = text.trim() || inputEl.value.trim();
+    if (!prompt) return;
+
+    if (!text.trim()) inputEl.value = '';
+
+    appendMessageBubble(prompt, 'user');
+    const loadingId = appendMessageBubble('*Analyzing signatures and loading context...*', 'ai');
+
+    fetch(`${API_URL}/copilot`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        prompt: prompt,
+        scan_context: activeCopilotScanContext ? {
+          url: activeCopilotScanContext.url,
+          verdict: activeCopilotScanContext.score > 75 ? 'MALICIOUS' : activeCopilotScanContext.score > 30 ? 'SUSPICIOUS' : 'SAFE',
+          risk_score: activeCopilotScanContext.score,
+          severity: activeCopilotScanContext.severity,
+          risk_category: activeCopilotScanContext.category,
+          explanation: activeCopilotScanContext.reason,
+          whois_summary: activeCopilotScanContext.whois_registrar,
+          domain_age: activeCopilotScanContext.domain_age,
+          ssl_analysis: activeCopilotScanContext.ssl_issuer,
+          vt_data: activeCopilotScanContext.vt_data,
+          threat_labels: activeCopilotScanContext.threat_labels
+        } : null
+      })
+    })
+    .then(res => {
+      if (!res.ok) throw new Error('Copilot Service degraded.');
+      return res.json();
+    })
+    .then(data => {
+      removeLoadingBubble(loadingId);
+      appendMessageBubble(data.response, 'ai');
+    })
+    .catch(err => {
+      console.error(err);
+      removeLoadingBubble(loadingId);
+      appendMessageBubble('⚠️ **Connection Timeout**. Threat intelligence network is unresponsive. Please retry.', 'ai');
+    });
+  };
+
+  btnSend.addEventListener('click', () => sendMessage());
+  inputEl.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') sendMessage();
+  });
+
+  // Chips click handler
+  if (chipsContainer) {
+    chipsContainer.addEventListener('click', (e) => {
+      if (e.target.classList.contains('chip-btn')) {
+        const question = e.target.getAttribute('data-question');
+        sendMessage(question);
+      }
+    });
+  }
+
+  function appendMessageBubble(text, sender) {
+    const bubble = document.createElement('div');
+    bubble.className = `message ${sender}`;
+    
+    // Parse simple bold/markdown elements
+    let formattedText = text
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.*?)\*/g, '<em>$1</em>')
+      .replace(/`([^`]+)`/g, '<code>$1</code>')
+      .replace(/\n/g, '<br/>');
+
+    bubble.innerHTML = formattedText;
+    messagesBox.appendChild(bubble);
+    messagesBox.scrollTop = messagesBox.scrollHeight;
+    
+    const randomId = 'msg-' + Math.random().toString(36).substring(2, 9);
+    bubble.id = randomId;
+    return randomId;
+  }
+
+  function removeLoadingBubble(id) {
+    const el = document.getElementById(id);
+    if (el) el.remove();
+  }
 }

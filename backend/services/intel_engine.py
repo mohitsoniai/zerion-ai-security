@@ -14,7 +14,7 @@ async def query_google_safe_browsing(url: str) -> dict:
     try:
         api_url = f"https://safebrowsing.googleapis.com/v4/threatMatches:find?key={settings.google_safe_browsing_key}"
         payload = {
-            "client": {"clientId": "wade-ai-v2", "clientVersion": "2.0.0"},
+            "client": {"clientId": "zerion-ai-v2", "clientVersion": "5.0.0"},
             "threatInfo": {
                 "threatTypes": ["MALWARE", "SOCIAL_ENGINEERING", "UNWANTED_SOFTWARE", "POTENTIALLY_HARMFUL_APPLICATION"],
                 "platformTypes": ["ANY_PLATFORM"],
@@ -92,10 +92,11 @@ async def query_virustotal(url: str) -> dict:
         error_logger.error(f"VirusTotal query failed for URL: {url}", e)
     return {"malicious": 0, "total": 0}
 
-def resolve_domain_ip(domain: str) -> str | None:
-    """Performs local DNS lookup to resolve domain hostname to an IP address."""
+async def resolve_domain_ip(domain: str) -> str | None:
+    """Performs local DNS lookup to resolve domain hostname to an IP address asynchronously."""
     try:
-        return socket.gethostbyname(domain)
+        loop = asyncio.get_running_loop()
+        return await loop.run_in_executor(None, socket.gethostbyname, domain)
     except Exception:
         return None
 
@@ -110,7 +111,7 @@ async def query_unified_intel(url: str, domain: str) -> dict:
         return cached_data
 
     # 2. Resolve IP for AbuseIPDB
-    ip = resolve_domain_ip(domain)
+    ip = await resolve_domain_ip(domain)
     
     # 3. Perform Concurrent Lookups
     vt_task = query_virustotal(url)
