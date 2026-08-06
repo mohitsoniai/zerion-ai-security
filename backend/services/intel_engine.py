@@ -2,6 +2,7 @@ import asyncio
 import socket
 import base64
 import httpx
+from typing import Optional
 from config.settings import settings
 from database.db import get_threat_intel_cache, set_threat_intel_cache
 from utils.logger import error_logger, app_logger
@@ -92,7 +93,7 @@ async def query_virustotal(url: str) -> dict:
         error_logger.error(f"VirusTotal query failed for URL: {url}", e)
     return {"malicious": 0, "total": 0}
 
-async def resolve_domain_ip(domain: str) -> str | None:
+async def resolve_domain_ip(domain: str) -> Optional[str]:
     """Performs local DNS lookup to resolve domain hostname to an IP address asynchronously."""
     try:
         loop = asyncio.get_running_loop()

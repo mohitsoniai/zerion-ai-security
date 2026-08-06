@@ -1,6 +1,7 @@
 import sqlite3
 import json
 from datetime import datetime, timedelta
+from typing import Optional
 from config.settings import settings
 from utils.logger import error_logger, app_logger
 
@@ -147,7 +148,7 @@ def log_threat_scan(url: str, result: dict, username: str = "Anonymous") -> None
         error_logger.error(f"Failed logging threat scan to DB for URL: {url}", e)
 
 
-def get_threat_intel_cache(domain: str) -> dict | None:
+def get_threat_intel_cache(domain: str) -> Optional[dict]:
     """Retrieves cached threat intelligence metrics for a domain if fresher than 12 hours."""
     try:
         with sqlite3.connect(settings.db_path) as conn:
@@ -180,7 +181,7 @@ def set_threat_intel_cache(domain: str, data: dict) -> None:
     except Exception as e:
         error_logger.error(f"Error writing threat intel cache for {domain}", e)
 
-def get_api_cache(url: str) -> dict | None:
+def get_api_cache(url: str) -> Optional[dict]:
     """Retrieves cached API scan response for a URL if fresher than 4 hours."""
     try:
         with sqlite3.connect(settings.db_path) as conn:

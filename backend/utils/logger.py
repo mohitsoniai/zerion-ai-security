@@ -2,6 +2,7 @@ import logging
 import json
 import sys
 from datetime import datetime
+from typing import Optional
 
 # Configure standard root log layout
 logging.basicConfig(
@@ -24,7 +25,7 @@ class StructuredLogger:
         log_data = {"timestamp": datetime.now().isoformat(), "message": msg, **kwargs}
         self.logger.warning(json.dumps(log_data))
 
-    def error(self, msg: str, exc: Exception | None = None, **kwargs) -> None:
+    def error(self, msg: str, exc: Optional[Exception] = None, **kwargs) -> None:
         log_data = {
             "timestamp": datetime.now().isoformat(),
             "message": msg,

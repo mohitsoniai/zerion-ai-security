@@ -1,3 +1,4 @@
+from typing import Optional
 from fastapi import APIRouter, BackgroundTasks, HTTPException
 from pydantic import BaseModel
 import asyncio
@@ -13,7 +14,7 @@ router = APIRouter()
 
 class ScanRequest(BaseModel):
     url: str
-    username: str | None = "Anonymous"
+    username: Optional[str] = "Anonymous"
 
 @router.post("/analyze")
 async def analyze_url(request: ScanRequest, background_tasks: BackgroundTasks) -> dict:
@@ -170,7 +171,7 @@ async def analyze_url(request: ScanRequest, background_tasks: BackgroundTasks) -
 class ReportRequest(BaseModel):
     domain: str
     report_type: str
-    comment: str | None = ""
+    comment: Optional[str] = ""
 
 @router.post("/report")
 async def report_domain(request: ReportRequest) -> dict:
@@ -187,9 +188,9 @@ async def report_domain(request: ReportRequest) -> dict:
 
 class CopilotRequest(BaseModel):
     prompt: str
-    scan_context: dict | None = None
+    scan_context: Optional[dict] = None
 
-def query_fallback_kb(prompt: str, context: dict | None) -> str:
+def query_fallback_kb(prompt: str, context: Optional[dict]) -> str:
     prompt_lower = prompt.lower()
     
     # 1. Explain this report / Is this website safe?
