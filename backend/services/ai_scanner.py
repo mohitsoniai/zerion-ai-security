@@ -1,7 +1,7 @@
 import json
 import collections
-from backend.config.settings import settings
-from backend.utils.logger import error_logger, app_logger, threat_logger
+from config.settings import settings
+from utils.logger import error_logger, app_logger, threat_logger
 from google import genai
 from groq import Groq
 

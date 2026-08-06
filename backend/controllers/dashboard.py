@@ -4,8 +4,8 @@ import io
 import httpx
 import asyncio
 from fastapi import APIRouter
-from backend.database.db import get_db_stats, get_recent_scans_logs
-from backend.utils.logger import error_logger, app_logger
+from database.db import get_db_stats, get_recent_scans_logs
+from utils.logger import error_logger, app_logger
 
 router = APIRouter()
 

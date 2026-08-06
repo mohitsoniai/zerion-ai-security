@@ -1,6 +1,6 @@
 import httpx
 import asyncio
-from backend.utils.logger import app_logger, error_logger
+from utils.logger import app_logger, error_logger
 
 class ThreatIntel:
     """Manages active threat intelligence feeds pulled from open security resources."""

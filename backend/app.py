@@ -1,8 +1,10 @@
 import sys
 import os
 
-# Allow running directly or as a module
+# Allow running directly from backend/ or from repository root
 current_dir = os.path.dirname(os.path.abspath(__file__))
+if current_dir not in sys.path:
+    sys.path.insert(0, current_dir)
 parent_dir = os.path.dirname(current_dir)
 if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
@@ -19,16 +21,16 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from backend.config.settings import settings
-from backend.middlewares.security import SecurityMiddleware
-from backend.middlewares.error_handler import (
+from config.settings import settings
+from middlewares.security import SecurityMiddleware
+from middlewares.error_handler import (
     ErrorHandlingMiddleware,
     validation_exception_handler,
     http_exception_handler
 )
-from backend.controllers import analyze, dashboard
-from backend.services.threat_intel import intel_db
-from backend.utils.logger import app_logger
+from controllers import analyze, dashboard
+from services.threat_intel import intel_db
+from utils.logger import app_logger
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -120,4 +122,4 @@ if __name__ == "__main__":
     default_reload = "false" if is_windows else "true"
     reload_env = os.getenv("ZERION_RELOAD", default_reload).lower() == "true"
     
-    uvicorn.run("backend.app:app", host="0.0.0.0", port=7860, reload=reload_env)
+    uvicorn.run("app:app", host="0.0.0.0", port=7860, reload=reload_env)

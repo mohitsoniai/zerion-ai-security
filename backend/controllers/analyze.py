@@ -1,13 +1,13 @@
 from fastapi import APIRouter, BackgroundTasks, HTTPException
 from pydantic import BaseModel
 import asyncio
-from backend.utils.domain import TRUSTED_AGES, get_domain_age, get_domain_details
-from backend.services.threat_intel import intel_db
-from backend.services.intel_engine import query_unified_intel
-from backend.services.ai_scanner import scanner
-from backend.database.db import get_api_cache, set_api_cache, log_threat_scan, log_threat_report
-from backend.middlewares.security import sanitize_input
-from backend.utils.logger import error_logger
+from utils.domain import TRUSTED_AGES, get_domain_age, get_domain_details
+from services.threat_intel import intel_db
+from services.intel_engine import query_unified_intel
+from services.ai_scanner import scanner
+from database.db import get_api_cache, set_api_cache, log_threat_scan, log_threat_report
+from middlewares.security import sanitize_input
+from utils.logger import error_logger
 
 router = APIRouter()
 

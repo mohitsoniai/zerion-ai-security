@@ -2,7 +2,7 @@ import ssl
 import socket
 import whois
 from datetime import datetime
-from backend.utils.logger import error_logger
+from utils.logger import error_logger
 
 # TRUSTED DOMAINS (Whitelist Ages to avoid network calls)
 TRUSTED_AGES = {

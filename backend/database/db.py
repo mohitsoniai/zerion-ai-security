@@ -1,8 +1,8 @@
 import sqlite3
 import json
 from datetime import datetime, timedelta
-from backend.config.settings import settings
-from backend.utils.logger import error_logger, app_logger
+from config.settings import settings
+from utils.logger import error_logger, app_logger
 
 # Define package initializer dynamically
 def init_db() -> None:

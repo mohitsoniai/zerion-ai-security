@@ -3,8 +3,8 @@ from collections import defaultdict
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
-from backend.config.settings import settings
-from backend.utils.logger import request_logger
+from config.settings import settings
+from utils.logger import request_logger
 
 class RateLimiter:
     """In-memory Token Bucket rate limiter to protect API routes from abuse."""

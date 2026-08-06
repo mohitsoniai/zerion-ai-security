@@ -2,10 +2,10 @@ import asyncio
 import socket
 import base64
 import httpx
-from backend.config.settings import settings
-from backend.database.db import get_threat_intel_cache, set_threat_intel_cache
-from backend.utils.logger import error_logger, app_logger
-from backend.services.threat_intel import intel_db
+from config.settings import settings
+from database.db import get_threat_intel_cache, set_threat_intel_cache
+from utils.logger import error_logger, app_logger
+from services.threat_intel import intel_db
 
 async def query_google_safe_browsing(url: str) -> dict:
     """Queries the Google Safe Browsing API v4 for threat classification."""

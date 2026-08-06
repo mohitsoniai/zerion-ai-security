@@ -3,7 +3,7 @@ from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
-from backend.utils.logger import error_logger
+from utils.logger import error_logger
 
 class ErrorHandlingMiddleware(BaseHTTPMiddleware):
     """
