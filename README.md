@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/banner.png" alt="Zerion AI Security Banner" width="100%" />
+  <img src="assets/banner.png" alt="Zerion AI Security Banner" width="100%" />
 </p>
 
 # Zerion AI v2 🛡️ (AI-Powered Browser Security Platform)
